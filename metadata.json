@@ -1,0 +1,6 @@
+{
+  "name": "One-on-One Attrition Risk Analyzer",
+  "description": "원온원 면담 스크립트 기반 핵심 지적자산 이탈 위험 및 교체비용 중심 재무 임팩트 시뮬레이션 대시보드",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
