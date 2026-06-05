@@ -2398,7 +2398,7 @@ export default function App() {
                             <span className="text-[10px] text-slate-400 font-semibold bg-slate-800 px-2 py-0.5 rounded">총 4개 부서 분석 중</span>
                           </div>
 
-                          <div className="max-h-[380px] sm:max-h-[420px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+                          <div className="space-y-3">
                             {bottleneckData.map((dept) => (
                               <div key={dept.id} className="p-4 bg-[#14181F]/90 rounded-xl border border-slate-800 relative overflow-hidden transition-all duration-200 hover:border-slate-700/80">
                                 <div className={`absolute top-0 left-0 w-[4px] h-full ${dept.gaugeColor}`} />
