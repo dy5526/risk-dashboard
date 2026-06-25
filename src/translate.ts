@@ -57,7 +57,9 @@ export const translateName = (name: string): string => {
     "박기태": "James",
     "배우진": "Andrew",
     "이지혜": "Lily",
-    "안태호": "Tom"
+    "안태호": "Tom",
+    "AI 분석 시스템": "AI Analysis System",
+    "관리자": "Administrator"
   };
   return map[name] || name;
 };
@@ -263,8 +265,10 @@ export const translateEmployee = (emp: EmployeeAnalysis): EmployeeAnalysis => {
         reason = "Initial AI analysis generated from 1on1 scripts";
       } else if (reason.includes("신규 분석 1온1 면담 피드백 생성")) {
         reason = "New 1on1 feedback analysis completed";
+      } else if (reason === "관리자 수동 조정 반영") {
+        reason = "Manual administrator adjustment applied";
       } else if (reason.includes("수동 조정 반영")) {
-        reason = `Manual override: ${reason}`;
+        reason = reason.replace("수동 조정 반영", "Manual adjustment").replace("관리자", "Admin");
       }
       return {
         ...hist,

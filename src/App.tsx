@@ -875,7 +875,7 @@ export default function App() {
               <p className="text-[10px] text-slate-500 font-bold">
                 {lang === "ko" ? "데이터 수집 기준" : "Data Collection Baseline"}
               </p>
-              <p className="text-xs font-mono text-slate-300">2026.06.01 15:12 GMT+9</p>
+              <p className="text-xs font-mono text-slate-300">2026.06.24 22:04 GMT-7</p>
             </div>
           </div>
         </div>
@@ -1494,7 +1494,7 @@ export default function App() {
                   <div className="flex items-center gap-1 border-b border-slate-800 pb-2">
                     <TrendingUp className="h-4 w-4 text-teal-400" />
                     <h4 className="text-xs font-bold text-white font-sans uppercase">
-                      맞춤 리더십 보완 마일스톤 치료 교안
+                      {lang === "en" ? "Customized Leadership Milestone Curriculums" : "맞춤 리더십 보완 마일스톤 치료 교안"}
                     </h4>
                   </div>
                   
@@ -1503,14 +1503,24 @@ export default function App() {
                     <div className="p-4 bg-[#0E1217]/80 border border-slate-800 rounded-xl hover:border-rose-500/15 transition-all duration-300 flex flex-col justify-between gap-4 font-sans">
                       <div className="space-y-3.5">
                         <div className="flex items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
-                          <span className="text-xs font-bold text-rose-455 font-sans">[의무] 탑다운 권위 소통 시정 교육</span>
-                          <span className="text-[9px] bg-rose-500/10 text-rose-455 px-1.5 py-0.5 rounded font-bold">권고 지수 최고</span>
+                          <span className="text-xs font-bold text-rose-455 font-sans">
+                            {lang === "en" ? "[Mandatory] Top-down Authoritative Communication Correction Training" : "[의무] 탑다운 권위 소통 시정 교육"}
+                          </span>
+                          <span className="text-[9px] bg-rose-500/10 text-rose-455 px-1.5 py-0.5 rounded font-bold">
+                            {lang === "en" ? "Highest Recommendation" : "권고 지수 최고"}
+                          </span>
                         </div>
                         <div className="space-y-1">
-                          <div className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">타겟 부족 세부 역량</div>
+                          <div className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">
+                            {lang === "en" ? "Target Competency Deficits" : "타겟 부족 세부 역량"}
+                          </div>
                           <div className="flex flex-wrap gap-1">
-                            <span className="text-[9.5px] bg-[#1a1313] border border-rose-500/10 text-rose-400 px-2 py-0.5 rounded">심리적 안전감</span>
-                            <span className="text-[9.5px] bg-[#1a1313] border border-rose-500/10 text-rose-400 px-2 py-0.5 rounded">경청과 공감</span>
+                            <span className="text-[9.5px] bg-[#1a1313] border border-rose-500/10 text-rose-400 px-2 py-0.5 rounded">
+                              {lang === "en" ? "Psychological Safety" : "심리적 안전감"}
+                            </span>
+                            <span className="text-[9.5px] bg-[#1a1313] border border-rose-500/10 text-rose-400 px-2 py-0.5 rounded">
+                              {lang === "en" ? "Listening & Empathy" : "경청과 공감"}
+                            </span>
                           </div>
                         </div>
                         
@@ -1545,15 +1555,23 @@ export default function App() {
 
                       <div className="space-y-2">
                         <div className="pt-3 border-t border-slate-855 bg-[#14181F]/40 p-2.5 rounded-lg border border-slate-800/80">
-                          <span className="text-[10px] font-bold text-teal-400 block mb-1">추천 처방 교육 및 플랜</span>
+                          <span className="text-[10px] font-bold text-teal-400 block mb-1">
+                            {lang === "en" ? "Recommended Remediation & Plan" : "추천 처방 교육 및 플랜"}
+                          </span>
                           <p className="text-[10px] text-slate-350 leading-relaxed font-sans">
-                            의사결정 긴급 분산, 프로젝트 지휘권의 프로젝트 현업 조직 이양 모델 구축 교육 및 1:1 밀착 코칭.
+                            {lang === "en"
+                              ? "Emergency delegation of decision-making, training to transfer project authority to teams, and intensive 1:1 coaching."
+                              : "의사결정 긴급 분산, 프로젝트 지휘권의 프로젝트 현업 조직 이양 모델 구축 교육 및 1:1 밀착 코칭."}
                           </p>
                         </div>
                         <div className="bg-emerald-500/5 border border-emerald-500/10 p-2.5 rounded-lg space-y-0.5">
-                          <span className="text-[10px] font-bold text-teal-400 block">교육 이수 시 예상 효과</span>
+                          <span className="text-[10px] font-bold text-teal-400 block">
+                            {lang === "en" ? "Expected Outcome upon Completion" : "교육 이수 시 예상 효과"}
+                          </span>
                           <p className="text-[9.5px] text-slate-300 leading-normal">
-                            핵심 이탈 위험군 잔류율 80% 개선 및 상향 피드백 수용성 45% 증가.
+                            {lang === "en"
+                              ? "80% improvement in key attrition risk retention and 45% increase in upward feedback receptivity."
+                              : "핵심 이탈 위험군 잔류율 80% 개선 및 상향 피드백 수용성 45% 증가."}
                           </p>
                         </div>
                       </div>
@@ -1563,14 +1581,24 @@ export default function App() {
                     <div className="p-4 bg-[#0E1217]/80 border border-slate-800 rounded-xl hover:border-amber-500/15 transition-all duration-300 flex flex-col justify-between gap-4 font-sans">
                       <div className="space-y-3.5">
                         <div className="flex items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
-                          <span className="text-xs font-bold text-amber-500 font-sans">[의무] 1on1 정렬 촉진 코칭</span>
-                          <span className="text-[9px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-bold">소통방임 취약</span>
+                          <span className="text-xs font-bold text-amber-500 font-sans">
+                            {lang === "en" ? "[Mandatory] 1on1 Alignment Facilitation Coaching" : "[의무] 1on1 정렬 촉진 코칭"}
+                          </span>
+                          <span className="text-[9px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-bold">
+                            {lang === "en" ? "Vulnerable to Neglect" : "소통방임 취약"}
+                          </span>
                         </div>
                         <div className="space-y-1">
-                          <div className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">타겟 부족 세부 역량</div>
+                          <div className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">
+                            {lang === "en" ? "Target Competency Deficits" : "타겟 부족 세부 역량"}
+                          </div>
                           <div className="flex flex-wrap gap-1">
-                            <span className="text-[9.5px] bg-[#1a1813] border border-amber-500/10 text-amber-300 px-2 py-0.5 rounded">현황 and 정렬</span>
-                            <span className="text-[9.5px] bg-[#1a1813] border border-amber-500/10 text-amber-300 px-2 py-0.5 rounded">건설적 피드백</span>
+                            <span className="text-[9.5px] bg-[#1a1813] border border-amber-500/10 text-amber-300 px-2 py-0.5 rounded">
+                              {lang === "en" ? "Status & Alignment" : "현황 and 정렬"}
+                            </span>
+                            <span className="text-[9.5px] bg-[#1a1813] border border-amber-500/10 text-amber-300 px-2 py-0.5 rounded">
+                              {lang === "en" ? "Constructive Feedback" : "건설적 피드백"}
+                            </span>
                           </div>
                         </div>
                         
@@ -1605,15 +1633,23 @@ export default function App() {
 
                       <div className="space-y-2">
                         <div className="pt-3 border-t border-slate-855 bg-[#14181F]/40 p-2.5 rounded-lg border border-slate-800/80">
-                          <span className="text-[10px] font-bold text-teal-400 block mb-1">추천 처방 교육 및 플랜</span>
+                          <span className="text-[10px] font-bold text-teal-400 block mb-1">
+                            {lang === "en" ? "Recommended Remediation & Plan" : "추천 처방 교육 및 플랜"}
+                          </span>
                           <p className="text-[10px] text-slate-350 leading-relaxed font-sans">
-                            역할(R&R) 가이드북 강제 보급, 주간 고정 원온원 정기 미팅 90% 이수율 주간 수치감사(Audit) 강행.
+                            {lang === "en"
+                              ? "Mandatory distribution of R&R guidebooks, weekly audits on regular 1on1s to enforce a 90% completion rate."
+                              : "역할(R&R) 가이드북 강제 보급, 주간 고정 원온원 정기 미팅 90% 이수율 주간 수치감사(Audit) 강행."}
                           </p>
                         </div>
                         <div className="bg-[#111c14] border border-emerald-500/10 p-2.5 rounded-lg space-y-0.5">
-                          <span className="text-[10px] font-bold text-teal-400 block pb-1">교육 이수 시 예상 효과</span>
+                          <span className="text-[10px] font-bold text-teal-400 block pb-1">
+                            {lang === "en" ? "Expected Outcome upon Completion" : "교육 이수 시 예상 효과"}
+                          </span>
                           <p className="text-[9.5px] text-slate-300 leading-normal font-sans">
-                            소통 주기 회기성 310% 복구, 직무 R&R 합리화 만족도 및 협업 장애 최소화.
+                            {lang === "en"
+                              ? "310% restoration of communication cadence regularity, and minimization of R&R and collaboration hurdles."
+                              : "소통 주기 회기성 310% 복구, 직무 R&R 합리화 만족도 및 협업 장애 최소화."}
                           </p>
                         </div>
                       </div>
@@ -1872,7 +1908,7 @@ export default function App() {
                         margin={{ top: 20, right: 15, left: -25, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                        <XAxis dataKey="month" stroke="#64748B" fontSize={11} tickLine={false} />
+                        <XAxis dataKey="month" stroke="#64748B" fontSize={11} tickLine={false} tickFormatter={(m) => lang === "en" ? translateMonth(m) : m} />
                         <YAxis stroke="#475569" fontSize={10} domain={[1, 10]} tickLine={false} />
                         <Tooltip contentStyle={{ backgroundColor: '#14181F', borderColor: '#334155', color: '#fff' }} />
                         <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '5px' }} />
@@ -2100,72 +2136,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Moved & Replaced Satisfaction Trend Area Chart (Now showing Leader vs Member Satisfaction in a 50/50 Grid with              </div>
-            )}          </div>
-                      <p className="text-[10px] text-slate-500">
-                        {lang === "en" 
-                          ? "\"Sincere listening, reliable career support, consistent cadence\" - 82% approval rate."
-                          : "\"경청 태도 성설, 든든한 경업 수용, 정기 진행\" 부문 82% 지지율."}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-[#0E1217] rounded-lg border border-slate-800">
-                      <div className="text-rose-400 font-bold mb-1 flex items-center gap-1">
-                        {lang === "en" ? "⚠ Dissatisfied Meeting Emotions" : "⚠ 면담 불만 감정"}
-                      </div>
-                      <p className="text-[10px] text-slate-500">
-                        {lang === "en"
-                          ? "\"Superficial check-ins, unkept commitments, focus on warnings\" - 58% detection rate."
-                          : "\"형식적 체크인, 약속 조치 미행, 긴축 통보 위주\" 부문 58% 검출."}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}                       </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400 font-sans mb-3 leading-relaxed">
-                        STT 음성 필터링 기술 기반, 리더 및 구성원의 언어 발화 비중 분석 결과입니다. 오블릿 표준 원칙인 <strong>리더 30% : 구성원 70% 준수율</strong>이 높을수록 구성원의 자율 몰입 신뢰도가 최적으로 작용합니다.
-                      </p>
-
-                      <div className="h-[280px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            layout="vertical"
-                            data={[
-                              { name: "AI개발팀", leaderTalk: 28, memberTalk: 72 },
-                              { name: "그로스마케팅팀", leaderTalk: 35, memberTalk: 65 },
-                              { name: "플랫폼인프라팀", leaderTalk: 45, memberTalk: 55 },
-                              { name: "프로덕트 디자인팀", leaderTalk: 68, memberTalk: 32 }
-                            ]}
-                            margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#223049" />
-                            <XAxis type="number" domain={[0, 100]} stroke="#64748B" fontSize={11} tickLine={false} unit="%" />
-                            <YAxis type="category" dataKey="name" stroke="#64748B" fontSize={11} tickLine={false} width={80} />
-                            <Tooltip contentStyle={{ backgroundColor: '#14181F', borderColor: '#334155', color: '#fff' }} />
-                            <Legend wrapperStyle={{ fontSize: '10px' }} />
-                            <Bar dataKey="leaderTalk" name="리더 발화량 (%)" stackId="talkStack" fill="#f43f5e" maxBarSize={20} />
-                            <Bar dataKey="memberTalk" name="구성원 발화량 (%)" stackId="talkStack" fill="#14b8a6" maxBarSize={20} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 space-y-2">
-                      <div className="p-2.5 bg-teal-500/10 border border-teal-500/20 rounded-lg space-y-1">
-                        <span className="text-[10px] font-bold text-teal-400 block flex items-center gap-1.5">
-                          <CheckCircle className="h-3.5 w-3.5 text-teal-400" />
-                          발화량 표준 오차 준수 상태 및 솔루션 제언
-                        </span>
-                        <div className="text-[10.5px] text-slate-350 font-sans space-y-1 font-medium leading-relaxed">
-                          <p>• <strong>경고 부서</strong>: <span className="text-rose-450 font-bold">프로덕트 디자인팀 (68%)</span>, 리더의 독점적 훈조 마찰 장벽 발생 🚨</p>
-                          <p>• <strong>준수 우수</strong>: <span className="text-teal-400 font-bold">AI개발팀 (28%)</span>, 모범적인 경청 및 개방적 질문 활용 완벽 구현 🟢</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Moved & Replaced Satisfaction Trend Area Chart (Now showing Leader vs Member Satisfaction in a 50/50 Grid with Leader Anomaly List) */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Left Column: 시계열 만족도 */}
@@ -2173,17 +2143,17 @@ export default function App() {
                     <div>
                       <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3.5 border-b border-slate-800 pb-2 font-sans">
                         <TrendingUp className="h-4 w-4 text-teal-400" />
-                        리더 및 구성원 1on1 만족도 시계열
+                        {lang === "en" ? "Leader & Member 1on1 Satisfaction Trend" : "리더 및 구성원 1on1 만족도 시계열"}
                       </h3>
                       <div className="h-[360px] w-full mt-2">
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart
                             data={[
-                              { name: "1월", "리더 만족도": 7.5, "구성원 만족도": 7.4 },
-                              { name: "2월", "리더 만족도": 7.6, "구성원 만족도": 7.2 },
-                              { name: "3월", "리더 만족도": 7.4, "구성원 만족도": 6.5 },
-                              { name: "4월", "리더 만족도": 7.1, "구성원 만족도": 5.8 },
-                              { name: "5월", "리더 만족도": 7.2, "구성원 만족도": 5.4 }
+                              { name: lang === "en" ? "Jan" : "1월", "leaderSat": 7.5, "memberSat": 7.4 },
+                              { name: lang === "en" ? "Feb" : "2월", "leaderSat": 7.6, "memberSat": 7.2 },
+                              { name: lang === "en" ? "Mar" : "3월", "leaderSat": 7.4, "memberSat": 6.5 },
+                              { name: lang === "en" ? "Apr" : "4월", "leaderSat": 7.1, "memberSat": 5.8 },
+                              { name: lang === "en" ? "May" : "5월", "leaderSat": 7.2, "memberSat": 5.4 }
                             ]}
                             margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
                           >
@@ -2202,167 +2172,178 @@ export default function App() {
                             <YAxis stroke="#2dd4bf" fontSize={10} domain={[3, 10]} tickLine={false} />
                             <Tooltip contentStyle={{ backgroundColor: '#14181F', borderColor: '#334155', color: '#fff' }} />
                             <Legend wrapperStyle={{ fontSize: '10px' }} />
-                            <Area type="monotone" dataKey="리더 만족도" stroke="#f59e0b" fillOpacity={1} fill="url(#colorLeaderSat)" strokeWidth={2.5} />
-                            <Area type="monotone" dataKey="구성원 만족도" stroke="#14b8a6" fillOpacity={1} fill="url(#colorMemberSat)" strokeWidth={2.5} />
+                            <Area type="monotone" dataKey="leaderSat" name={lang === "en" ? "Leader Satisfaction" : "리더 만족도"} stroke="#f59e0b" fillOpacity={1} fill="url(#colorLeaderSat)" strokeWidth={2.5} />
+                            <Area type="monotone" dataKey="memberSat" name={lang === "en" ? "Member Satisfaction" : "구성원 만족도"} stroke="#14b8a6" fillOpacity={1} fill="url(#colorMemberSat)" strokeWidth={2.5} />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
-                    <p className="text-[10.5px] text-slate-350 leading-normal mt-4 bg-[#0B0F13]/40 p-2.5 rounded border border-slate-850 font-sans">
-                      <strong>시계열 만족도 분석 소견:</strong> 5월로 갈수록 <strong>리더 만족도(Amber)</strong> 대비 <strong>구성원 만족도(Teal)</strong> 하락으로 온도차가 <strong>1.8점</strong>까지 벌어졌으며, 조속한 개입이 권고됩니다.
+                    <p className="text-[10.5px] text-slate-350 leading-normal mt-4 bg-[#0B0F13]/40 p-2.5 rounded border border-slate-850 font-sans font-medium">
+                      {lang === "en" ? (
+                        <>
+                          <strong>Time-Series Satisfaction Analysis:</strong> As we approach May, the gap between <strong>Leader Satisfaction (Amber)</strong> and <strong>Member Satisfaction (Teal)</strong> widened to <strong>1.8 points</strong> due to the latter's rapid decline, suggesting immediate alignment intervention is highly recommended.
+                        </>
+                      ) : (
+                        <>
+                          <strong>시계열 만족도 분석 소견:</strong> 5월로 갈수록 <strong>리더 만족도(Amber)</strong> 대비 <strong>구성원 만족도(Teal)</strong> 하락으로 온도차가 <strong>1.8점</strong>까지 벌어졌으며, 조속한 개입이 권고됩니다.
+                        </>
+                      )}
                     </p>
                   </div>
 
-                  {/* Right Column: 원온원 비정상 신호 감지 리더 리스트 */}
-                  <div className="rounded-xl border border-slate-800 bg-[#14181F] p-4 shadow-lg flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3.5 border-b border-slate-800 pb-2 font-sans">
-                        <Users className="h-4 w-4 text-rose-500" />
-                        {lang === "en" ? "Anomaly Signal Detected Leaders" : "비정상 신호 감지 리더 (격차/발화 불량)"}
-                      </h3>
-                      <p className="text-[11px] text-slate-400 font-sans mb-3 leading-relaxed font-normal">
-                        {lang === "en"
-                          ? "List of managers flagged with excessive 1on1 satisfaction gaps, speech imbalance (leader dominance), or meeting attendance failure."
-                          : "익명 1on1 만족도 격차가 너무 크거나 발화 비율 불균형(리더 독점) 또는 면담 불참 과도로 경고등이 켜진 관리 리더 명단입니다."}
-                      </p>
+                  {/* Right Column: 원온원 비정상 신호 감지 리더 리스트 & 전사 주요 감정 키워드 비율 */}
+                  <div className="space-y-4 flex flex-col h-full justify-between">
+                    <div className="rounded-xl border border-slate-800 bg-[#14181F] p-4 shadow-lg flex flex-col justify-between flex-1">
+                      <div>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3.5 border-b border-slate-800 pb-2 font-sans">
+                          <Users className="h-4 w-4 text-rose-500" />
+                          {lang === "en" ? "Anomaly Signal Detected Leaders" : "비정상 신호 감지 리더 (격차/발화 불량)"}
+                        </h3>
+                        <p className="text-[11px] text-slate-400 font-sans mb-3 leading-relaxed font-normal">
+                          {lang === "en"
+                            ? "List of managers flagged with excessive 1on1 satisfaction gaps, speech imbalance (leader dominance), or meeting attendance failure."
+                            : "익명 1on1 만족도 격차가 너무 크거나 발화 비율 불균형(리더 독점) 또는 면담 불참 과도로 경고등이 켜진 관리 리더 명단입니다."}
+                        </p>
 
-                      <div className="space-y-3">
-                        {/* Leader 1 */}
-                        <div className="p-3 bg-[#0E1217] rounded-lg border border-rose-500/10 hover:border-rose-500/25 transition-all">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-xs font-bold text-slate-200">
-                                {lang === "en" ? translateName("강석주") : "강석주"}
-                              </span>
-                              <span className="text-[9px] text-slate-500">
-                                {lang === "en" ? translateDept("프로덕트 디자인팀") : "프로덕트 디자인팀"}
-                              </span>
-                            </div>
-                            <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-rose-500/10 text-rose-450 border-rose-500/20">
-                              {lang === "en" ? "Danger Warning" : "위험 경고"}
-                            </span>
-                          </div>
-                          
-                          {/* Core Stats */}
-                          <div className="grid grid-cols-2 gap-3 text-[10px] bg-[#14181F]/40 p-2 rounded border border-slate-800">
-                            <div>
-                              <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-slate-500">{lang === "en" ? "Comm Gap" : "소통 격차"}</span>
-                                <span className="text-rose-400 font-bold">
-                                  {lang === "en" ? "3.3 pts (Severe)" : "3.3점 (심각)"}
+                        <div className="space-y-3">
+                          {/* Leader 1 */}
+                          <div className="p-3 bg-[#0E1217] rounded-lg border border-rose-500/10 hover:border-rose-500/25 transition-all">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-baseline gap-1.5">
+                                <span className="text-xs font-bold text-slate-200">
+                                  {lang === "en" ? translateName("강석주") : "강석주"}
+                                </span>
+                                <span className="text-[9px] text-slate-500">
+                                  {lang === "en" ? translateDept("프로덕트 디자인팀") : "프로덕트 디자인팀"}
                                 </span>
                               </div>
-                              <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-rose-500" style={{ width: '85%' }} />
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-rose-500/10 text-rose-450 border-rose-500/20">
+                                {lang === "en" ? "Danger Warning" : "위험 경고"}
+                              </span>
+                            </div>
+                            
+                            {/* Core Stats */}
+                            <div className="grid grid-cols-2 gap-3 text-[10px] bg-[#14181F]/40 p-2 rounded border border-slate-800">
+                              <div>
+                                <div className="flex justify-between items-center mb-0.5">
+                                  <span className="text-slate-500">{lang === "en" ? "Comm Gap" : "소통 격차"}</span>
+                                  <span className="text-rose-400 font-bold">
+                                    {lang === "en" ? "3.3 pts (Severe)" : "3.3점 (심각)"}
+                                  </span>
+                                </div>
+                                <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                                  <div className="h-full bg-rose-500" style={{ width: '85%' }} />
+                                </div>
+                              </div>
+                              <div>
+                                <div className="flex justify-between items-center mb-0.5">
+                                  <span className="text-slate-500">{lang === "en" ? "Talk Ratio" : "리더 발화율"}</span>
+                                  <span className="text-rose-400 font-bold">
+                                    {lang === "en" ? "68% (Dominant)" : "68% (독점)"}
+                                  </span>
+                                </div>
+                                <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                                  <div className="h-full bg-rose-400" style={{ width: '68%' }} />
+                                </div>
                               </div>
                             </div>
-                            <div>
-                              <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-slate-500">{lang === "en" ? "Talk Ratio" : "리더 발화율"}</span>
-                                <span className="text-rose-400 font-bold">
-                                  {lang === "en" ? "68% (Dominant)" : "68% (독점)"}
+                            <p className="text-[10px] text-slate-400 leading-normal mt-1.5">
+                              {lang === "en"
+                                ? "* Extremely high frequency of unilateral instruction, neutralizing autonomy and triggering turnover risk among core senior staff."
+                                : "※ 일방향 지시 빈도가 지나치게 높아 자율성 무력화 및 핵심 시니어 이탈 위험 유발."}
+                            </p>
+                          </div>
+
+                          {/* Leader 2 */}
+                          <div className="p-3 bg-[#0E1217] rounded-lg border border-amber-500/10 hover:border-amber-500/25 transition-all">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-baseline gap-1.5">
+                                <span className="text-xs font-bold text-slate-200">
+                                  {lang === "en" ? translateName("최무현") : "최무현"}
+                                </span>
+                                <span className="text-[9px] text-slate-500">
+                                  {lang === "en" ? translateDept("플랫폼인프라팀") : "플랫폼인프라팀"}
                                 </span>
                               </div>
-                              <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-rose-400" style={{ width: '68%' }} />
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-amber-500/10 text-amber-400 border-amber-500/20">
+                                {lang === "en" ? "Monitoring" : "모니터링"}
+                              </span>
+                            </div>
+                            
+                            {/* Core Stats */}
+                            <div className="grid grid-cols-2 gap-3 text-[10px] bg-[#14181F]/40 p-2 rounded border border-slate-800">
+                              <div>
+                                <div className="flex justify-between items-center mb-0.5">
+                                  <span className="text-slate-500">{lang === "en" ? "Comm Gap" : "소통 격차"}</span>
+                                  <span className="text-amber-400 font-bold">
+                                    {lang === "en" ? "1.3 pts (Caution)" : "1.3점 (주의)"}
+                                  </span>
+                                </div>
+                                <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                                  <div className="h-full bg-amber-500" style={{ width: '55%' }} />
+                                </div>
+                              </div>
+                              <div>
+                                <div className="flex justify-between items-center mb-0.5">
+                                  <span className="text-slate-500">{lang === "en" ? "Missed 1on1" : "면담 불참률"}</span>
+                                  <span className="text-amber-400 font-bold">
+                                    {lang === "en" ? "80% (Neglect)" : "80% (해태)"}
+                                  </span>
+                                </div>
+                                <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                                  <div className="h-full bg-amber-400" style={{ width: '80%' }} />
+                                </div>
                               </div>
                             </div>
+                            <p className="text-[10px] text-slate-400 leading-normal mt-1.5">
+                              {lang === "en"
+                                ? "* Missed 1on1 commitments cause team fatigue and continue a downward trend in satisfaction."
+                                : "※ 원온원 미이행 등 약속 이행 장애로 팀 피로도 유발 및 만족도 우하향 양상 지속."}
+                            </p>
                           </div>
-                          <p className="text-[10px] text-slate-400 leading-normal mt-1.5">
+                        </div>
+                      </div>
+
+                      <div className="bg-rose-500/5 border border-rose-500/10 p-2 rounded-lg space-y-0.5 mt-4">
+                        <span className="text-[10px] font-bold text-rose-400 block flex items-center gap-1">
+                          <ShieldAlert className="h-3 w-3" />
+                          {lang === "en" ? "Recommended Actions" : "권고 조치 사항"}
+                        </span>
+                        <p className="text-[9.5px] text-slate-400 leading-normal font-sans font-medium">
+                          {lang === "en"
+                            ? "Leaders at risk are required to participate in communication sessions and undergo weekly audits of 1on1 scheduler setup."
+                            : "소통 위험 대상 리더군에게는 소통 개선 세션 의무 참여 및 주간 정기 면담 수립 현황 점검 조치가 수립됩니다."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Card 2: 전사 1on1 주요 감정 키워드 비율 */}
+                    <div className="rounded-xl border border-slate-800 bg-[#14181F] p-4 font-sans shadow-lg">
+                      <h4 className="text-xs font-bold text-slate-200 mb-2.5">
+                        {lang === "en" ? "Company-wide 1on1 Emotion Keyword Ratio" : "전사 1on1 주요 감정 키워드 비율"}
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className="p-3 bg-[#0E1217] rounded-lg border border-slate-800">
+                          <div className="text-emerald-400 font-bold mb-1 flex items-center gap-1">
+                            {lang === "en" ? "✔ Positive Feedback" : "✔ 면담 긍정 반응"}
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-medium">
                             {lang === "en"
-                              ? "* Extremely high frequency of unilateral instruction, neutralizing autonomy and triggering turnover risk among core senior staff."
-                              : "※ 일방향 지시 빈도가 지나치게 높아 자율성 무력화 및 핵심 시니어 이탈 위험 유발."}
+                              ? "\"Active listening, solid support, regular cadence\" shows an 82% approval rating."
+                              : '"경청 태도 성설, 든든한 경업 수용, 정기 진행" 부문 82% 지지율.'}
                           </p>
                         </div>
-
-                        {/* Leader 2 */}
-                        <div className="p-3 bg-[#0E1217] rounded-lg border border-amber-500/10 hover:border-amber-500/25 transition-all">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-xs font-bold text-slate-200">
-                                {lang === "en" ? translateName("최무현") : "최무현"}
-                              </span>
-                              <span className="text-[9px] text-slate-500">
-                                {lang === "en" ? translateDept("플랫폼인프라팀") : "플랫폼인프라팀"}
-                              </span>
-                            </div>
-                            <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-amber-500/10 text-amber-400 border-amber-500/20">
-                              {lang === "en" ? "Monitoring" : "모니터링"}
-                            </span>
+                        <div className="p-3 bg-[#0E1217] rounded-lg border border-slate-800">
+                          <div className="text-rose-400 font-bold mb-1 flex items-center gap-1">
+                            {lang === "en" ? "⚠ Dissatisfied Sentiment" : "⚠ 면담 불만 감정"}
                           </div>
-                          
-                          {/* Core Stats */}
-                          <div className="grid grid-cols-2 gap-3 text-[10px] bg-[#14181F]/40 p-2 rounded border border-slate-800">
-                            <div>
-                              <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-slate-500">{lang === "en" ? "Comm Gap" : "소통 격차"}</span>
-                                <span className="text-amber-400 font-bold">
-                                  {lang === "en" ? "1.3 pts (Caution)" : "1.3점 (주의)"}
-                                </span>
-                              </div>
-                              <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-amber-500" style={{ width: '55%' }} />
-                              </div>
-                            </div>
-                            <div>
-                              <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-slate-500">{lang === "en" ? "Missed 1on1" : "면담 불참률"}</span>
-                                <span className="text-amber-400 font-bold">
-                                  {lang === "en" ? "80% (Neglect)" : "80% (해태)"}
-                                </span>
-                              </div>
-                              <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-amber-400" style={{ width: '80%' }} />
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-[10px] text-slate-400 leading-normal mt-1.5">
+                          <p className="text-[10px] text-slate-500 font-medium">
                             {lang === "en"
-                              ? "* Missed 1on1 commitments cause team fatigue and continue a downward trend in satisfaction."
-                              : "※ 원온원 미이행 등 약속 이행 장애로 팀 피로도 유발 및 만족도 우하향 양상 지속."}
+                              ? "\"Formal check-ins, unkept action promises, restructures/layoffs focus\" has a 58% detection rate."
+                              : '"형식적 체크인, 약속 조치 미행, 긴축 통보 위주" 부문 58% 검출.'}
                           </p>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="bg-rose-500/5 border border-rose-500/10 p-2 rounded-lg space-y-0.5 mt-4">
-                      <span className="text-[10px] font-bold text-rose-400 block flex items-center gap-1">
-                        <ShieldAlert className="h-3 w-3" />
-                        {lang === "en" ? "Recommended Actions" : "권고 조치 사항"}
-                      </span>
-                      <p className="text-[9.5px] text-slate-400 leading-normal font-sans font-medium">
-                        {lang === "en"
-                          ? "Leaders at risk are required to participate in communication sessions and undergo weekly audits of 1on1 scheduler setup."
-                          : "소통 위험 대상 리더군에게는 소통 개선 세션 의무 참여 및 주간 정기 면담 수립 현황 점검 조치가 수립됩니다."}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-800 bg-[#14181F] p-4 font-sans">
-                  <h4 className="text-xs font-bold text-slate-200 mb-2.5">
-                    {lang === "en" ? "Company-wide 1on1 Emotion Keyword Ratio" : "전사 1on1 주요 감정 키워드 비율"}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-3 bg-[#0E1217] rounded-lg border border-slate-800">
-                      <div className="text-emerald-400 font-bold mb-1 flex items-center gap-1">
-                        {lang === "en" ? "✔ Positive Feedback" : "✔ 면담 긍정 반응"}
-                      </div>
-                      <p className="text-[10px] text-slate-500">
-                        {lang === "en"
-                          ? "\"Active listening, solid support, regular cadence\" shows an 82% approval rating."
-                          : '"경청 태도 성설, 든든한 경업 수용, 정기 진행" 부문 82% 지지율.'}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-[#0E1217] rounded-lg border border-slate-800">
-                      <div className="text-rose-400 font-bold mb-1 flex items-center gap-1">
-                        {lang === "en" ? "⚠ Dissatisfied Sentiment" : "⚠ 면담 불만 감정"}
-                      </div>
-                      <p className="text-[10px] text-slate-500">
-                        {lang === "en"
-                          ? "\"Formal check-ins, unkept action promises, restructures/layoffs focus\" has a 58% detection rate."
-                          : '"형식적 체크인, 약속 조치 미행, 긴축 통보 위주" 부문 58% 검출.'}
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -3029,9 +3010,10 @@ export default function App() {
               <EmployeeDetailPanel 
                 employee={selectedEmployee} 
                 onClose={() => setSelectedEmployeeId(null)}
-                employees={employees}
+                employees={translatedEmployees}
                 onSelectEmployee={setSelectedEmployeeId}
                 onUpdateEmployeeRisk={handleUpdateEmployeeRisk}
+                lang={lang}
               />
             </div>
           )}

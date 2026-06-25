@@ -379,7 +379,12 @@ export default function EmployeeDetailPanel({
               <button
                 onClick={() => {
                   if (onUpdateEmployeeRisk) {
-                    onUpdateEmployeeRisk(employee.id, adjustedScore, adjustmentReason || "관리자 수동 조정 반영", updaterName || "관리자");
+                    onUpdateEmployeeRisk(
+                      employee.id, 
+                      adjustedScore, 
+                      adjustmentReason || (lang === "en" ? "Manual administrator adjustment applied" : "관리자 수동 조정 반영"), 
+                      updaterName || (lang === "en" ? "Administrator" : "관리자")
+                    );
                     setIsEditing(false);
                     setAdjustmentReason("");
                   }
