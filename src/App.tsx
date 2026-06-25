@@ -8,6 +8,19 @@ import { INITIAL_EMPLOYEES } from "./data";
 import { EmployeeAnalysis, DashboardMetrics } from "./types";
 import EmployeeDetailPanel from "./components/EmployeeDetailPanel";
 import WordCloud from "./components/WordCloud";
+import {
+  translateName,
+  translateDept,
+  translateRole,
+  translateTimeline,
+  translateEmployee,
+  translateSubject,
+  translateLeaderProfile,
+  translateMonth,
+  translateStatus,
+  translateReasonAndSolution,
+  translateHeatmapRow
+} from "./translate";
 
 // Recharts imports for dark-themed, premium visualizations
 import {
@@ -560,6 +573,7 @@ export const TIME_SERIES_BY_TEAM: Record<string, { month: string; satisfaction: 
 };
 
 export default function App() {
+  const [lang, setLang] = useState<"ko" | "en">("ko");
   const [employees, setEmployees] = useState<EmployeeAnalysis[]>(() => initEmployeesList(INITIAL_EMPLOYEES));
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(INITIAL_EMPLOYEES[0]?.id || null);
   const [activeTab, setActiveTab] = useState<"risk" | "leadership" | "comms" | "satisfaction" | "bottleneck">("risk");
@@ -592,14 +606,75 @@ export default function App() {
   const [selectedTimeSeriesTeam, setSelectedTimeSeriesTeam] = useState<string>("AI개발팀");
   const [selectedBottleneckDept, setSelectedBottleneckDept] = useState<string>("all");
 
+  // Translate employees list based on selected language
+  const translatedEmployees = useMemo(() => {
+    if (lang === "en") {
+      return employees.map(emp => translateEmployee(emp));
+    }
+    return employees;
+  }, [employees, lang]);
+
+  // Translate leader profiles list
+  const translatedLeaderProfiles = useMemo(() => {
+    if (lang === "en") {
+      return LEADER_PROFILES.map(prof => translateLeaderProfile(prof));
+    }
+    return LEADER_PROFILES;
+  }, [lang]);
+
+  // Local helper functions for translating department status and descriptions in leadership tab
+  const translateDeptStatus = (status: string) => {
+    if (lang !== "en") return status;
+    const map: Record<string, string> = {
+      "보통 (지속 육성)": "Normal (Continuous Growth)",
+      "우수 (안정적 성장)": "Excellent (Stable Growth)",
+      "위태 (리더십 갈등 조치 요망)": "Critical (Leadership Action Needed)",
+      "보통 (인프라 과업 정제)": "Normal (Platform Chores)",
+      "최우수 (소통 신뢰 최고치)": "Outstanding (Max Trust & Empathy)"
+    };
+    return map[status] || status;
+  };
+
+  const translateDeptDesc = (desc: string) => {
+    if (lang !== "en") return desc;
+    const map: Record<string, string> = {
+      "전사적으로 '솔루션 제시' 역량은 강력하나, '심리적 안전감'과 '건설적 피드백' 역량 보완을 통한 대화 질적 개선이 요구됩니다.":
+        "Company-wide, 'Actionable Solutions' is strong, but quality of conversation needs improvement through reinforcing 'Psychological Safety' and 'Constructive Feedback'.",
+      "수평적 기술 검토 및 활발한 피드백 루프로 전체 지표가 높은 고품질의 성장을 이룩 중입니다.":
+        "Achieving high-quality growth across all metrics thanks to horizontal technical reviews and active feedback loops.",
+      "신임 디자인본부장 부임 후 독단적 탑다운 관리로 심리적 안전감 및 경청 공감 수준이 실질적인 퇴보 양상을 보입니다.":
+        "Since the new Design VP arrived, psychological safety and listening empathy scores show substantial decline due to authoritarian top-down micromanagement.",
+      "마찰 강도는 낮으나 다소 소극적인 지표 정체가 보여지며, 업무 R&R 가이드 라인 및 자율 주도성의 수혈이 제안됩니다.":
+        "Friction is low but scores are stagnant; introducing clear R&R guidelines and empowering employee autonomy are highly recommended.",
+      "심리적 결속력이 탁월하며 원만한 정기 원온원을 통해 전 분야에 걸쳐 완벽한 모범 지표를 달성하였습니다.":
+        "Outstanding psychological cohesion and highly effective regular 1on1 sessions have yielded exemplary scores across all dimensions."
+    };
+    return map[desc] || desc;
+  };
+
+  // Translate satisfaction and execution heatmap datasets
+  const translatedHeatmapSatisfaction = useMemo(() => {
+    if (lang === "en") {
+      return HEATMAP_SATISFACTION_DATA.map(translateHeatmapRow);
+    }
+    return HEATMAP_SATISFACTION_DATA;
+  }, [lang]);
+
+  const translatedHeatmapExecution = useMemo(() => {
+    if (lang === "en") {
+      return HEATMAP_EXECUTION_DATA.map(translateHeatmapRow);
+    }
+    return HEATMAP_EXECUTION_DATA;
+  }, [lang]);
+
   // Get currently selected employee object
   const selectedEmployee = useMemo(() => {
-    return employees.find(e => e.id === selectedEmployeeId) || null;
-  }, [employees, selectedEmployeeId]);
+    return translatedEmployees.find(e => e.id === selectedEmployeeId) || null;
+  }, [translatedEmployees, selectedEmployeeId]);
 
   // Unique list of all affected projects for those at medium/high risk (Score >= 40) across the company, mapped to their owners (contributing employees)
   const affectedProjectsWithOwners = useMemo(() => {
-    const atRiskEmployees = employees.filter(e => e.riskScore >= 40);
+    const atRiskEmployees = translatedEmployees.filter(e => e.riskScore >= 40);
     const projectsMap = new Map<string, { project: string; owners: { id: string; name: string; dept: string; score: number }[] }>();
 
     atRiskEmployees.forEach(emp => {
@@ -621,19 +696,19 @@ export default function App() {
     });
 
     return Array.from(projectsMap.values());
-  }, [employees]);
+  }, [translatedEmployees]);
 
   // Compute live dashboard metrics based on active employee roster
   const metrics = useMemo<DashboardMetrics & { uniqueRiskProjectsCount: number; safeCount: number; targetCount: number }>(() => {
-    const total = employees.length;
-    const highRisk = employees.filter(e => e.riskScore >= 70).length;
-    const mediumRisk = employees.filter(e => e.riskScore >= 40 && e.riskScore < 70).length;
-    const lowRisk = employees.filter(e => e.riskScore >= 20 && e.riskScore < 40).length;
-    const safeCount = employees.filter(e => e.riskScore < 20).length;
+    const total = translatedEmployees.length;
+    const highRisk = translatedEmployees.filter(e => e.riskScore >= 70).length;
+    const mediumRisk = translatedEmployees.filter(e => e.riskScore >= 40 && e.riskScore < 70).length;
+    const lowRisk = translatedEmployees.filter(e => e.riskScore >= 20 && e.riskScore < 40).length;
+    const safeCount = translatedEmployees.filter(e => e.riskScore < 20).length;
     const targetCount = highRisk + mediumRisk + lowRisk;
 
     const avgOrgRisk = total > 0 
-      ? Math.round(employees.reduce((sum, emp) => sum + emp.riskScore, 0) / total) 
+      ? Math.round(translatedEmployees.reduce((sum, emp) => sum + emp.riskScore, 0) / total) 
       : 0;
 
     return {
@@ -647,14 +722,14 @@ export default function App() {
       avgOrgRisk,
       uniqueRiskProjectsCount: affectedProjectsWithOwners.length
     };
-  }, [employees, affectedProjectsWithOwners]);
+  }, [translatedEmployees, affectedProjectsWithOwners]);
 
   // Transform roster into Department aggregates with clear risk category counts
   const departmentChartData = useMemo(() => {
     const map = new Map<string, { highRisk: number; mediumRisk: number; lowRisk: number }>();
 
-    employees.filter(e => e.riskScore >= 20).forEach(e => {
-      const deptName = e.department || "공통/기타";
+    translatedEmployees.filter(e => e.riskScore >= 20).forEach(e => {
+      const deptName = e.department || (lang === "en" ? "Common/Other" : "공통/기타");
       const state = map.get(deptName) || { highRisk: 0, mediumRisk: 0, lowRisk: 0 };
       
       if (e.riskScore >= 70) {
@@ -683,7 +758,7 @@ export default function App() {
     });
 
     return formatData;
-  }, [employees]);
+  }, [translatedEmployees, lang]);
 
 
 
@@ -757,19 +832,49 @@ export default function App() {
       <header className="sticky top-0 z-40 border-b border-slate-800/50 bg-[#0B0F13]/90 shadow-lg backdrop-blur-md pb-4 pt-5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <h1 className="text-2xl font-black tracking-tight text-white font-sans">
                 Orblit <span className="text-teal-400">1on1</span>
               </h1>
+
+              {/* Elegant KO/EN Language Switcher */}
+              <div className="flex items-center bg-[#14181F] border border-slate-800 p-0.5 rounded-lg text-[10px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setLang("ko")}
+                  className={`px-2.5 py-1 rounded transition-all duration-150 cursor-pointer ${
+                    lang === "ko"
+                      ? "bg-teal-500/10 text-teal-400 border border-teal-500/20 font-extrabold"
+                      : "text-slate-500 hover:text-slate-350"
+                  }`}
+                >
+                  KO
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLang("en")}
+                  className={`px-2.5 py-1 rounded transition-all duration-150 cursor-pointer ${
+                    lang === "en"
+                      ? "bg-teal-500/10 text-teal-400 border border-teal-500/20 font-extrabold"
+                      : "text-slate-500 hover:text-slate-350"
+                  }`}
+                >
+                  EN
+                </button>
+              </div>
             </div>
             <p className="text-slate-500 text-xs mt-1.5 font-medium whitespace-nowrap leading-normal">
-              ※ 본 분석 결과는 1온1 면담 스크립트 데이터를 바탕으로 한 AI 예측치이므로 실제 상담 피드백과 함께 유연하게 판단해 주십시오.
+              {lang === "ko"
+                ? "※ 본 분석 결과는 1온1 면담 스크립트 데이터를 바탕으로 한 AI 예측치이므로 실제 상담 피드백과 함께 유연하게 판단해 주십시오."
+                : "※ These analytical insights are AI-driven predictions based on 1on1 script data. Please use discretion alongside real advisory feedback."}
             </p>
           </div>
 
           <div className="flex items-center space-x-6 shrink-0 mt-2 md:mt-0">
             <div className="text-right hidden sm:block">
-              <p className="text-[10px] text-slate-500 font-bold">데이터 수집 기준</p>
+              <p className="text-[10px] text-slate-500 font-bold">
+                {lang === "ko" ? "데이터 수집 기준" : "Data Collection Baseline"}
+              </p>
               <p className="text-xs font-mono text-slate-300">2026.06.01 15:12 GMT+9</p>
             </div>
           </div>
@@ -782,11 +887,11 @@ export default function App() {
         {/* Interactive Premium Navigation Tabs */}
         <div className="flex flex-wrap gap-1 border-b border-slate-800 bg-[#0E1217]/80 p-1.5 rounded-xl">
           {[
-            { id: "risk", label: "이탈 위험", icon: Users },
-            { id: "leadership", label: "리더십", icon: UserCheck },
-            { id: "comms", label: "소통 히트맵", icon: MessageSquare },
-            { id: "satisfaction", label: "1on1 만족도", icon: TrendingUp },
-            { id: "bottleneck", label: "병목", icon: ShieldAlert },
+            { id: "risk", label: lang === "ko" ? "이탈 위험" : "Risk of Attrition", icon: Users },
+            { id: "leadership", label: lang === "ko" ? "리더십" : "Leadership", icon: UserCheck },
+            { id: "comms", label: lang === "ko" ? "소통 히트맵" : "Comms Heatmap", icon: MessageSquare },
+            { id: "satisfaction", label: lang === "ko" ? "1on1 만족도" : "1on1 Satisfaction", icon: TrendingUp },
+            { id: "bottleneck", label: lang === "ko" ? "병목" : "Roadblocks", icon: ShieldAlert },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
@@ -830,42 +935,42 @@ export default function App() {
                     <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
                       <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5 text-teal-400" />
-                        이탈 점검 관리 대상 코호트 및 진단 분포
+                        {lang === "en" ? "Attrition Risk Target Cohort & Diagnostic Distribution" : "이탈 점검 관리 대상 코호트 및 진단 분포"}
                       </h3>
                       <span className="font-mono text-xs font-bold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20 shrink-0">
-                        총 {metrics.targetCount}명
+                        {lang === "en" ? `Total ${metrics.targetCount} Pax` : `총 ${metrics.targetCount}명`}
                       </span>
                     </div>
 
                     {/* Progress Stack bar */}
                     <div className="bg-[#0B0F13]/40 rounded-lg p-3">
                       <div className="flex justify-between items-center text-[10px] text-slate-400 mb-1.5">
-                        <span className="font-semibold text-slate-300">정밀 진단별 비율 분포</span>
-                        <span className="text-[9px] text-slate-500">누적 현황</span>
+                        <span className="font-semibold text-slate-300">{lang === "en" ? "Diagnostic Ratio Distribution" : "정밀 진단별 비율 분포"}</span>
+                        <span className="text-[9px] text-slate-500">{lang === "en" ? "Cumulative Status" : "누적 현황"}</span>
                       </div>
                       
                       <div className="h-2 w-full rounded-full bg-slate-800 flex overflow-hidden">
-                        <div className="bg-rose-500 h-full transition-all duration-500" style={{ width: `${metrics.targetCount ? (metrics.highRiskCount / metrics.targetCount * 100) : 0}%` }} title="고위험" />
-                        <div className="bg-amber-500 h-full transition-all duration-500" style={{ width: `${metrics.targetCount ? (metrics.mediumRiskCount / metrics.targetCount * 100) : 0}%` }} title="경계" />
-                        <div className="bg-[#10B981] h-full transition-all duration-500" style={{ width: `${metrics.targetCount ? (metrics.lowRiskCount / metrics.targetCount * 100) : 0}%` }} title="확인 필요" />
+                        <div className="bg-rose-500 h-full transition-all duration-500" style={{ width: `${metrics.targetCount ? (metrics.highRiskCount / metrics.targetCount * 100) : 0}%` }} title={lang === "en" ? "High Risk" : "고위험"} />
+                        <div className="bg-amber-500 h-full transition-all duration-500" style={{ width: `${metrics.targetCount ? (metrics.mediumRiskCount / metrics.targetCount * 100) : 0}%` }} title={lang === "en" ? "At Risk" : "경계"} />
+                        <div className="bg-[#10B981] h-full transition-all duration-500" style={{ width: `${metrics.targetCount ? (metrics.lowRiskCount / metrics.targetCount * 100) : 0}%` }} title={lang === "en" ? "Need Verification" : "확인 필요"} />
                       </div>
 
                       {/* Labels Row */}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-[9px] sm:text-[10px]">
                         <div className="flex items-center gap-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                          <span className="text-slate-400">고위험:</span>
-                          <span className="text-slate-202 font-mono font-bold">{metrics.highRiskCount}명 ({metrics.targetCount ? Math.round(metrics.highRiskCount / metrics.targetCount * 100) : 0}%)</span>
+                          <span className="text-slate-400">{lang === "en" ? "High Risk:" : "고위험:"}</span>
+                          <span className="text-slate-202 font-mono font-bold">{metrics.highRiskCount}{lang === "en" ? " Pax" : "명"} ({metrics.targetCount ? Math.round(metrics.highRiskCount / metrics.targetCount * 100) : 0}%)</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                          <span className="text-slate-400">위험:</span>
-                          <span className="text-slate-202 font-mono font-bold">{metrics.mediumRiskCount}명 ({metrics.targetCount ? Math.round(metrics.mediumRiskCount / metrics.targetCount * 100) : 0}%)</span>
+                          <span className="text-slate-400">{lang === "en" ? "At Risk:" : "위험:"}</span>
+                          <span className="text-slate-202 font-mono font-bold">{metrics.mediumRiskCount}{lang === "en" ? " Pax" : "명"} ({metrics.targetCount ? Math.round(metrics.mediumRiskCount / metrics.targetCount * 100) : 0}%)</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
-                          <span className="text-slate-400">확인필요:</span>
-                          <span className="text-slate-202 font-mono font-bold">{metrics.lowRiskCount}명 ({metrics.targetCount ? Math.round(metrics.lowRiskCount / metrics.targetCount * 100) : 0}%)</span>
+                          <span className="text-slate-400">{lang === "en" ? "Need Verification:" : "확인필요:"}</span>
+                          <span className="text-slate-202 font-mono font-bold">{metrics.lowRiskCount}{lang === "en" ? " Pax" : "명"} ({metrics.targetCount ? Math.round(metrics.lowRiskCount / metrics.targetCount * 100) : 0}%)</span>
                         </div>
                       </div>
                     </div>
@@ -891,11 +996,11 @@ export default function App() {
                               className={`flex items-center justify-between p-2 rounded-lg border text-left transition-all cursor-pointer ${borderStyles}`}
                             >
                               <div className="truncate pr-1">
-                                <p className="text-[10px] font-bold text-slate-200 truncate leading-tight">{emp.employeeName}</p>
-                                <p className="text-[8px] text-slate-500 mt-0.5 truncate leading-none">{emp.department}</p>
+                                <p className="text-[10px] font-bold text-slate-200 truncate leading-tight">{lang === "en" ? translateName(emp.employeeName) : emp.employeeName}</p>
+                                <p className="text-[8px] text-slate-500 mt-0.5 truncate leading-none">{lang === "en" ? translateDept(emp.department) : emp.department}</p>
                               </div>
                               <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${badgeColor}`}>
-                                {tier}
+                                {lang === "en" ? translateStatus(tier) : tier}
                               </span>
                             </button>
                           );
@@ -911,7 +1016,7 @@ export default function App() {
                   <div className="flex items-center justify-between border-b border-slate-800 bg-[#12161D] px-5 py-3">
                     <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5 font-sans">
                       <BarChart3 className="h-4 w-4 text-teal-400" />
-                      부서별 이탈 위험 상세 분포
+                      {lang === "en" ? "Detailed Attrition Risk Distribution by Department" : "부서별 이탈 위험 상세 분포"}
                     </h4>
                   </div>
 
@@ -933,9 +1038,9 @@ export default function App() {
                               cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                             />
                             <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                            <Bar dataKey="고위험" fill="#e11d48" stackId="riskStack" maxBarSize={32} />
-                            <Bar dataKey="위험" fill="#f59e0b" stackId="riskStack" maxBarSize={32} />
-                            <Bar dataKey="확인 필요" fill="#10b981" stackId="riskStack" maxBarSize={32} />
+                            <Bar dataKey="고위험" name={lang === "en" ? "High Risk" : "고위험"} fill="#e11d48" stackId="riskStack" maxBarSize={32} />
+                            <Bar dataKey="위험" name={lang === "en" ? "At Risk" : "위험"} fill="#f59e0b" stackId="riskStack" maxBarSize={32} />
+                            <Bar dataKey="확인 필요" name={lang === "en" ? "Need Verification" : "확인 필요"} fill="#10b981" stackId="riskStack" maxBarSize={32} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -955,12 +1060,12 @@ export default function App() {
                       <FolderTree className="h-4 w-4 text-rose-400" />
                       <div>
                         <h3 className="text-xs font-bold text-white transition-colors border-b-0">
-                          이탈 시 영향을 받는 프로젝트/업무
+                          {lang === "en" ? "Projects/Tasks Affected upon Attrition" : "이탈 시 영향을 받는 프로젝트/업무"}
                         </h3>
                       </div>
                     </div>
                     <span className="font-mono text-xs font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 shrink-0">
-                      총 {metrics.uniqueRiskProjectsCount}개 업무
+                      {lang === "en" ? `Total ${metrics.uniqueRiskProjectsCount} Tasks` : `총 ${metrics.uniqueRiskProjectsCount}개 업무`}
                     </span>
                   </div>
 
@@ -987,7 +1092,7 @@ export default function App() {
                                     className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[9px] font-bold cursor-pointer transition-all ${pillStyle}`}
                                   >
                                     <span className="h-1 w-1 bg-current rounded-full" />
-                                    <span>{owner.name} · {owner.dept}</span>
+                                    <span>{lang === "en" ? translateName(owner.name) : owner.name} · {lang === "en" ? translateDept(owner.dept) : owner.dept}</span>
                                   </button>
                                 );
                               })}
@@ -999,7 +1104,7 @@ export default function App() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-[10px] text-slate-500 italic py-1.5 col-span-2">위험 노출된 프로젝트가 없습니다.</p>
+                      <p className="text-[10px] text-slate-500 italic py-1.5 col-span-2">{lang === "en" ? "No projects are exposed to risk." : "위험 노출된 프로젝트가 없습니다."}</p>
                     )}
                   </div>
                 </div>
@@ -1011,36 +1116,36 @@ export default function App() {
               <div className="space-y-4 animate-fadeIn">
                 {/* Upper grid: Comparative Dept */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                  {/* Left Column: Comparative Department Details (lg:col-span-12) */}
+                   {/* Left Column: Comparative Department Details (lg:col-span-12) */}
                   <div className="lg:col-span-12 rounded-xl border border-slate-800 bg-[#14181F]/90 p-5 shadow-lg flex flex-col justify-between">
                     <div>
                       {/* Top bar with Title & Dropdown selectors */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-800 pb-3">
                         <h3 className="text-sm font-bold text-white flex items-center gap-2 font-sans">
                           <Activity className="h-4 w-4 text-teal-400" />
-                          리더십 역량 분석
+                          {lang === "en" ? "Leadership Competency Analysis" : "리더십 역량 분석"}
                         </h3>
                         {/* Dual Selector controls */}
                         <div className="flex items-center gap-1.5 self-end">
-                          <span className="text-[10px] text-slate-500 font-bold font-sans">대상 부서 A:</span>
+                          <span className="text-[10px] text-slate-500 font-bold font-sans">{lang === "en" ? "Target Dept A:" : "대상 부서 A:"}</span>
                           <select
                             value={selectedLeadDeptA}
                             onChange={(e) => setSelectedLeadDeptA(e.target.value)}
                             className="bg-[#0e1217] text-[11px] text-teal-400 font-bold border border-teal-500/30 rounded px-1.5 py-0.5 focus:border-teal-400 focus:outline-none cursor-pointer"
                           >
                             {Object.keys(LEADERSHIP_DEPT_DATA).map((dept) => (
-                              <option key={dept} value={dept}>{dept}</option>
+                              <option key={dept} value={dept}>{lang === "en" ? translateDept(dept) : dept}</option>
                             ))}
                           </select>
                           <span className="text-[10px] text-slate-500 font-bold font-sans">vs</span>
-                          <span className="text-[10px] text-slate-500 font-bold font-sans">대상 부서 B:</span>
+                          <span className="text-[10px] text-slate-500 font-bold font-sans">{lang === "en" ? "Target Dept B:" : "대상 부서 B:"}</span>
                           <select
                             value={selectedLeadDeptB}
                             onChange={(e) => setSelectedLeadDeptB(e.target.value)}
                             className="bg-[#0e1217] text-[11px] text-amber-400 font-bold border border-amber-500/30 rounded px-1.5 py-0.5 focus:border-amber-400 focus:outline-none cursor-pointer"
                           >
                             {Object.keys(LEADERSHIP_DEPT_DATA).map((dept) => (
-                              <option key={dept} value={dept}>{dept}</option>
+                              <option key={dept} value={dept}>{lang === "en" ? translateDept(dept) : dept}</option>
                             ))}
                           </select>
                         </div>
@@ -1053,35 +1158,22 @@ export default function App() {
                           <div>
                             <div className="flex items-center justify-between mb-3 border-b border-slate-800/40 pb-2.5">
                               <span className="text-sm font-bold text-teal-400 font-sans">
-                                {selectedLeadDeptA}
+                                {lang === "en" ? translateDept(selectedLeadDeptA) : selectedLeadDeptA}
                               </span>
-                              <span className="text-[10px] text-slate-500 font-mono">
-                                리더 {LEADERSHIP_DEPT_DATA[selectedLeadDeptA]?.leaderCount || "0명"}
+                              <span className="text-[10px] bg-teal-500/10 text-teal-450 px-2 py-0.5 rounded font-bold">
+                                {lang === "en" ? "Dept A" : "부서 A"}
                               </span>
                             </div>
-                            
-                            {/* Growth Indicator and Status badge */}
-                            <div className="flex flex-wrap items-center gap-1.5 mb-4">
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${LEADERSHIP_DEPT_DATA[selectedLeadDeptA]?.statusColor}`}>
-                                {LEADERSHIP_DEPT_DATA[selectedLeadDeptA]?.status}
-                              </span>
-                              <div className="bg-slate-800/40 text-[9.5px] border border-slate-800 rounded px-1.5 py-0.5 text-slate-400">
-                                <span className={`font-bold ${parseFloat(LEADERSHIP_DEPT_DATA[selectedLeadDeptA]?.growth || "0") >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{LEADERSHIP_DEPT_DATA[selectedLeadDeptA]?.growth}</span>
-                              </div>
-                            </div>
-
-                            {/* Scores list */}
-                            <div className="space-y-3.5 mt-4">
-                              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">6대 역량 상세 점수</div>
+                            <div className="space-y-3.5 my-3">
                               {LEADERSHIP_COMPETENCIES.map((comp, idx) => {
                                 const score = LEADERSHIP_DEPT_DATA[selectedLeadDeptA]?.scores[idx]?.score || 0;
                                 return (
-                                  <div key={idx} className="space-y-1.5 font-sans">
-                                    <div className="flex justify-between items-center text-[10.5px]">
-                                      <span className="text-slate-400">{comp.subject}</span>
-                                      <span className="font-mono font-bold text-teal-400">{score}점</span>
+                                  <div key={idx} className="space-y-1.5">
+                                    <div className="flex justify-between text-[11px] font-sans">
+                                      <span className="text-slate-400">{lang === "en" ? translateSubject(comp.subject) : comp.subject}</span>
+                                      <span className="font-mono font-bold text-teal-400">{score}{lang === "en" ? " pts" : "점"}</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-slate-850 rounded-full overflow-hidden">
+                                    <div className="h-1.5 w-full bg-slate-855 rounded-full overflow-hidden">
                                       <div 
                                         className="h-full bg-teal-500 transition-all duration-300"
                                         style={{ width: `${score * 10}%` }}
@@ -1097,12 +1189,12 @@ export default function App() {
                         {/* Column 2: Radar comparison */}
                         <div className="lg:col-span-4 bg-[#0E1217]/55 border border-slate-800/60 rounded-xl p-4 flex flex-col justify-between">
                           <div className="border-b border-slate-800/40 pb-2.5 mb-3.5">
-                            <span className="text-[11.5px] font-bold text-slate-300 font-sans block">부서 역량 교차 진단</span>
+                            <span className="text-[11.5px] font-bold text-slate-300 font-sans block">{lang === "en" ? "Cross Diagnostic of Dept Capabilities" : "부서 역량 교차 진단"}</span>
                           </div>
                           <div className="h-[250px] w-full flex items-center justify-center">
                             <ResponsiveContainer width="100%" height="100%">
                               <RadarChart cx="50%" cy="42%" outerRadius="76%" data={LEADERSHIP_COMPETENCIES.map((comp, idx) => ({
-                                  subject: comp.subject,
+                                  subject: lang === "en" ? translateSubject(comp.subject) : comp.subject,
                                   scoreA: LEADERSHIP_DEPT_DATA[selectedLeadDeptA]?.scores[idx]?.score || 0,
                                   scoreB: LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.scores[idx]?.score || 0
                                 }))}>
@@ -1110,14 +1202,14 @@ export default function App() {
                                 <PolarAngleAxis dataKey="subject" stroke="#64748B" fontSize={10} />
                                 <PolarRadiusAxis angle={30} domain={[0, 10]} stroke="#1E293B" tick={false} />
                                 <Radar 
-                                  name={selectedLeadDeptA} 
+                                  name={lang === "en" ? translateDept(selectedLeadDeptA) : selectedLeadDeptA} 
                                   dataKey="scoreA" 
                                   stroke="#2dd4bf" 
                                   fill="#2dd4bf" 
                                   fillOpacity={0.25} 
                                 />
                                 <Radar 
-                                  name={selectedLeadDeptB} 
+                                  name={lang === "en" ? translateDept(selectedLeadDeptB) : selectedLeadDeptB} 
                                   dataKey="scoreB" 
                                   stroke="#fbbf24" 
                                   fill="#fbbf24" 
@@ -1143,17 +1235,17 @@ export default function App() {
                           <div>
                             <div className="flex items-center justify-between mb-3 border-b border-slate-800/40 pb-2.5">
                               <span className="text-sm font-bold text-amber-400 font-sans">
-                                {selectedLeadDeptB}
+                                {lang === "en" ? translateDept(selectedLeadDeptB) : selectedLeadDeptB}
                               </span>
                               <span className="text-[10px] text-slate-500 font-mono">
-                                리더 {LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.leaderCount || "0명"}
+                                {lang === "en" ? `Leaders: ${LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.leaderCount?.replace("명", "") || "0"}` : `리더 ${LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.leaderCount || "0명"}`}
                               </span>
                             </div>
                             
                             {/* Growth Indicator and Status badge */}
                             <div className="flex flex-wrap items-center gap-1.5 mb-4">
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.statusColor}`}>
-                                {LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.status}
+                                {translateDeptStatus(LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.status)}
                               </span>
                               <div className="bg-slate-800/40 text-[9.5px] border border-slate-800 rounded px-1.5 py-0.5 text-slate-400">
                                 <span className={`font-bold ${parseFloat(LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.growth || "0") >= 0 ? "text-emerald-450" : "text-rose-455"}`}>{LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.growth}</span>
@@ -1162,15 +1254,15 @@ export default function App() {
 
                             {/* Scores list */}
                             <div className="space-y-3.5 mt-4">
-                              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">6대 역량 상세 점수</div>
+                              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">{lang === "en" ? "6 Competencies Detail Scores" : "6대 역량 상세 점수"}</div>
                               {LEADERSHIP_COMPETENCIES.map((comp, idx) => {
                                 const score = LEADERSHIP_DEPT_DATA[selectedLeadDeptB]?.scores[idx]?.score || 0;
                                 return (
                                   <div key={idx} className="space-y-1">
                                     <div className="flex justify-between items-center text-[10.5px]">
-                                      <span className="text-slate-400">{comp.subject}</span>
+                                      <span className="text-slate-400">{lang === "en" ? translateSubject(comp.subject) : comp.subject}</span>
                                       <span className="font-mono font-bold text-amber-400">
-                                        <span>{score}점</span>
+                                        <span>{score}{lang === "en" ? " pts" : "점"}</span>
                                       </span>
                                     </div>
                                     <div className="h-1.5 w-full bg-slate-800/80 rounded-full overflow-hidden">
@@ -1203,7 +1295,7 @@ export default function App() {
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4 text-rose-500 animate-pulse" />
                           <h3 className="text-xs font-bold text-white font-sans uppercase tracking-wider">
-                            정밀 소통 진단 소견 (주의 리더)
+                            {lang === "en" ? "Diagnostic Insights (Attention Required)" : "정밀 소통 진단 소견 (주의 리더)"}
                           </h3>
                         </div>
                       </div>
@@ -1211,10 +1303,10 @@ export default function App() {
                       {/* Instruction & Caution Tabs Selection Row */}
                       <div className="space-y-2">
                         <div className="text-[10px] text-slate-500 font-semibold font-sans tracking-wide">
-                          조회할 대상 리더를 선택하세요
+                          {lang === "en" ? "Select target leader to view" : "조회할 대상 리더를 선택하세요"}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {LEADER_PROFILES.filter(p => p.type === "toxic").map((profile) => {
+                          {translatedLeaderProfiles.filter(p => p.type === "toxic").map((profile) => {
                             const isSelected = profile.id === selectedToxicId;
                             const activeClass = isSelected
                               ? "bg-rose-500/10 text-rose-400 font-bold border-rose-500/40 shadow-sm shadow-rose-950/20"
@@ -1235,7 +1327,7 @@ export default function App() {
                       </div>
 
                       {(() => {
-                        const leader = LEADER_PROFILES.find(p => p.id === selectedToxicId);
+                        const leader = translatedLeaderProfiles.find(p => p.id === selectedToxicId);
                         if (!leader) return null;
                         return (
                           <div className="space-y-4 bg-[#14181F]/40 rounded-xl p-4 animate-fadeIn">
@@ -1248,7 +1340,7 @@ export default function App() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-[11.5px] text-rose-400 font-bold font-mono">
-                                  종합 {leader.overallScore}점
+                                  {lang === "en" ? `Overall ${leader.overallScore} pts` : `종합 ${leader.overallScore}점`}
                                 </span>
                               </div>
                             </div>
@@ -1264,7 +1356,7 @@ export default function App() {
                                       <div className="flex justify-between items-center text-[10.5px]">
                                         <span className="text-slate-400 font-medium">{comp.subject}</span>
                                         <span className={`font-mono font-bold ${scoreColor}`}>
-                                          {comp.score}점
+                                          {comp.score}{lang === "en" ? " pts" : "점"}
                                         </span>
                                       </div>
                                       <div className="h-1.5 w-full bg-slate-850 rounded-full overflow-hidden">
@@ -1281,8 +1373,10 @@ export default function App() {
 
                             {/* Diagnosis Opinion text segment */}
                             <div className="p-3 bg-[#0E1217]/60 rounded-xl border border-slate-800/80 font-sans">
-                              <span className="text-[10px] font-bold text-rose-455 block mb-1">리더 분석 인사이트</span>
-                              <p className="text-[11px] text-slate-350 leading-relaxed">
+                              <span className="text-[10px] font-bold text-rose-455 block mb-1">
+                                {lang === "en" ? "Leader Analysis Insights" : "리더 분석 인사이트"}
+                              </span>
+                              <p className="text-[11px] text-slate-350 leading-relaxed font-normal">
                                 {leader.desc}
                               </p>
                             </div>
@@ -1302,7 +1396,7 @@ export default function App() {
                         <div className="flex items-center gap-2">
                           <Sparkles className="h-4 w-4 text-teal-400" />
                           <h3 className="text-xs font-bold text-white font-sans uppercase tracking-wider">
-                            정밀 소통 진단 소견 (우수 리더)
+                            {lang === "en" ? "Diagnostic Insights (Exemplary)" : "정밀 소통 진단 소견 (우수 리더)"}
                           </h3>
                         </div>
                       </div>
@@ -1310,10 +1404,10 @@ export default function App() {
                       {/* Instruction & Outstanding Tabs Selection Row */}
                       <div className="space-y-2">
                         <div className="text-[10px] text-slate-500 font-semibold font-sans tracking-wide">
-                          조회할 대상 리더를 선택하세요
+                          {lang === "en" ? "Select target leader to view" : "조회할 대상 리더를 선택하세요"}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {LEADER_PROFILES.filter(p => p.type === "outstanding").map((profile) => {
+                          {translatedLeaderProfiles.filter(p => p.type === "outstanding").map((profile) => {
                             const isSelected = profile.id === selectedOutstandingId;
                             const activeClass = isSelected
                               ? "bg-teal-500/10 text-teal-400 font-bold border-teal-500/40 shadow-sm shadow-teal-950/20"
@@ -1334,7 +1428,7 @@ export default function App() {
                       </div>
 
                       {(() => {
-                        const leader = LEADER_PROFILES.find(p => p.id === selectedOutstandingId);
+                        const leader = translatedLeaderProfiles.find(p => p.id === selectedOutstandingId);
                         if (!leader) return null;
                         return (
                           <div className="space-y-4 bg-[#14181F]/40 rounded-xl p-4 animate-fadeIn">
@@ -1347,7 +1441,7 @@ export default function App() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-[11.5px] text-teal-400 font-bold font-mono">
-                                  종합 {leader.overallScore}점
+                                  {lang === "en" ? `Overall ${leader.overallScore} pts` : `종합 ${leader.overallScore}점`}
                                 </span>
                               </div>
                             </div>
@@ -1363,7 +1457,7 @@ export default function App() {
                                       <div className="flex justify-between items-center text-[10.5px]">
                                         <span className="text-slate-400 font-medium">{comp.subject}</span>
                                         <span className={`font-mono font-bold ${scoreColor}`}>
-                                          {comp.score}점
+                                          {comp.score}{lang === "en" ? " pts" : "점"}
                                         </span>
                                       </div>
                                       <div className="h-1.5 w-full bg-slate-850 rounded-full overflow-hidden">
@@ -1380,8 +1474,10 @@ export default function App() {
 
                             {/* Diagnosis Opinion text segment */}
                             <div className="p-3 bg-[#0E1217]/60 rounded-xl border border-slate-800/80 font-sans">
-                              <span className="text-[10px] font-bold text-teal-400 block mb-1">리더 분석 인사이트</span>
-                              <p className="text-[11px] text-slate-350 leading-relaxed">
+                              <span className="text-[10px] font-bold text-teal-400 block mb-1">
+                                {lang === "en" ? "Leader Analysis Insights" : "리더 분석 인사이트"}
+                              </span>
+                              <p className="text-[11px] text-slate-350 leading-relaxed font-normal">
                                 {leader.desc}
                               </p>
                             </div>
@@ -1419,15 +1515,29 @@ export default function App() {
                         </div>
                         
                         <div className="space-y-2">
-                          <div className="text-[10px] text-slate-455 font-bold">수강 필수 및 추천 대상 리더 (2명)</div>
+                          <div className="text-[10px] text-slate-455 font-bold">
+                            {lang === "en" ? "Required & Recommended Leaders (2)" : "수강 필수 및 추천 대상 리더 (2명)"}
+                          </div>
                           <div className="space-y-2 bg-[#1a1313]/30 border border-slate-800 rounded-lg p-3">
                             <div className="border-b border-slate-800/40 pb-1.5 last:border-0 last:pb-0">
-                              <p className="text-[11px] text-[#f8fafc] font-bold">1. 강석주 (프로덕트 디자인팀)</p>
-                              <p className="text-[9.5px] text-slate-400 mt-0.5">지나친 마이크로매니징과 일방적 탑다운 지시성 소통 반복 조치 필요</p>
+                              <p className="text-[11px] text-[#f8fafc] font-bold">
+                                1. {lang === "en" ? `${translateName("강석주")} (${translateDept("프로덕트 디자인팀")})` : "강석주 (프로덕트 디자인팀)"}
+                              </p>
+                              <p className="text-[9.5px] text-slate-400 mt-0.5">
+                                {lang === "en"
+                                  ? "Action required for excessive micromanagement and repeated unilateral top-down communication"
+                                  : "지나친 마이크로매니징과 일방적 탑다운 지시성 소통 반복 조치 필요"}
+                              </p>
                             </div>
                             <div className="pt-1.5">
-                              <p className="text-[11px] text-[#f8fafc] font-bold">2. 한장원 (개발사업본부)</p>
-                              <p className="text-[9.5px] text-slate-400 mt-0.5">일방적 기획 통보 성향 검출로 부서 내 자율성 점수 최하 수치 검출</p>
+                              <p className="text-[11px] text-[#f8fafc] font-bold">
+                                2. {lang === "en" ? `${translateName("한장원")} (${translateDept("개발사업본부")})` : "한장원 (개발사업본부)"}
+                              </p>
+                              <p className="text-[9.5px] text-slate-400 mt-0.5">
+                                {lang === "en"
+                                  ? "Lowest autonomy score in department due to unilateral project notifications"
+                                  : "일방적 기획 통보 성향 검출로 부서 내 자율성 점수 최하 수치 검출"}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1465,15 +1575,29 @@ export default function App() {
                         </div>
                         
                         <div className="space-y-2">
-                          <div className="text-[10px] text-slate-455 font-bold">수강 필수 및 추천 대상 리더 (2명)</div>
+                          <div className="text-[10px] text-slate-455 font-bold">
+                            {lang === "en" ? "Required & Recommended Leaders (2)" : "수강 필수 및 추천 대상 리더 (2명)"}
+                          </div>
                           <div className="space-y-2 bg-[#1a1813]/30 border border-slate-800 rounded-lg p-3">
                             <div className="border-b border-slate-800/40 pb-1.5 last:border-0 last:pb-0">
-                              <p className="text-[11px] text-[#f8fafc] font-bold">1. 최무현 (플랫폼인프라팀)</p>
-                              <p className="text-[9.5px] text-slate-400 mt-0.5">원온원 면담 불참률 80% 도달, 자원 배분 갈등 회피성 무대응 상태 누적</p>
+                              <p className="text-[11px] text-[#f8fafc] font-bold">
+                                1. {lang === "en" ? `${translateName("최무현")} (${translateDept("플랫폼인프라팀")})` : "최무현 (플랫폼인프라팀)"}
+                              </p>
+                              <p className="text-[9.5px] text-slate-400 mt-0.5">
+                                {lang === "en"
+                                  ? "80% 1on1 attendance failure, leading to unresolved resource allocation conflicts"
+                                  : "원온원 면담 불참률 80% 도달, 자원 배분 갈등 회피성 무대응 상태 누적"}
+                              </p>
                             </div>
                             <div className="pt-1.5">
-                              <p className="text-[11px] text-[#f8fafc] font-bold">2. 박기태 (솔루션영업팀)</p>
-                              <p className="text-[9.5px] text-slate-400 mt-0.5">영업 피로도에 따른 파트원 면담 일면 불참 및 전출 불만 장벽 우려</p>
+                              <p className="text-[11px] text-[#f8fafc] font-bold">
+                                2. {lang === "en" ? `${translateName("박기태")} (${translateDept("솔루션영업팀")})` : "박기태 (솔루션영업팀)"}
+                              </p>
+                              <p className="text-[9.5px] text-slate-400 mt-0.5">
+                                {lang === "en"
+                                  ? "Fatigue from sales operations leading to missed 1on1s and potential transfer complaints"
+                                  : "영업 피로도에 따른 파트원 면담 일면 불참 및 전출 불만 장벽 우려"}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1509,7 +1633,7 @@ export default function App() {
                     <div>
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
                         <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5 font-sans">
-                          1on1 만족도 지표 (온도 및 정서 안전지수)
+                          {lang === "en" ? "1on1 Satisfaction Metrics (Temperature & Psychological Safety Index)" : "1on1 만족도 지표 (온도 및 정서 안전지수)"}
                         </h4>
                       </div>
                       
@@ -1517,19 +1641,19 @@ export default function App() {
                         <table className="w-full table-fixed min-w-[340px]">
                           <thead>
                             <tr className="border-b border-slate-800/40 pb-1.5">
-                              <th className="w-[30%] p-1.5 text-left text-[9.5px] text-slate-500 font-mono font-sans font-medium">부서 및 리더</th>
-                              {["1on1 만족도", "업무 몰입도", "성장 만족도"].map((m, idx) => (
+                              <th className="w-[30%] p-1.5 text-left text-[9.5px] text-slate-500 font-mono font-sans font-medium">{lang === "en" ? "Dept & Leader" : "부서 및 리더"}</th>
+                              {(lang === "en" ? ["1on1 Satisfaction", "Work Engagement", "Growth Satisfaction"] : ["1on1 만족도", "업무 몰입도", "성장 만족도"]).map((m, idx) => (
                                 <th key={idx} className="w-[23.3%] p-1 text-center text-[9.5px] text-slate-400 font-bold font-sans">{m}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-855/40">
-                            {HEATMAP_SATISFACTION_DATA.map((row, rIdx) => (
+                            {translatedHeatmapSatisfaction.map((row, rIdx) => (
                               <tr key={rIdx} className="hover:bg-slate-900/10 transition-all border-b border-slate-900/40">
                                 <td className="p-2 py-2.5">
                                   <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-slate-200">{row.dept.replace("프로덕트 ", "")}</span>
-                                    <span className="text-[9.5px] text-slate-500 mt-0.5 font-mono">{row.leader}</span>
+                                    <span className="text-xs font-bold text-slate-200">{lang === "en" ? translateDept(row.dept) : row.dept.replace("프로덕트 ", "")}</span>
+                                    <span className="text-[9.5px] text-slate-500 mt-0.5 font-mono">{lang === "en" ? translateName(row.leader) : row.leader}</span>
                                   </div>
                                 </td>
                                 {row.metrics.map((m, mIdx) => {
@@ -1584,9 +1708,17 @@ export default function App() {
 
                     <div className="mt-2.5">
                       <div className="p-3 bg-[#0B0F13]/40 border border-[#1e293b] rounded-lg text-[11px] text-slate-400 leading-normal font-sans font-medium">
-                        <strong>만족도 지표 종합 분석 인사이트:</strong> 1on1 관계성 회복 중심의 인사이트입니다. 
-                        <strong> AI개발팀</strong>은 리더의 개방적 질문 활용도로 만족도 <strong>8.5</strong>의 선순환 시너지를 구가 중이나, 
-                        <strong> 프로덕트 디자인팀</strong>은 권위적 미팅 지휘 성향에 따라 만족도 <strong>3.2</strong>의 최저 위험에 봉착해 지시 성향 시정 개입이 극구 강권됩니다.
+                        {lang === "en" ? (
+                          <>
+                            <strong>Satisfaction Metrics Comprehensive Analysis Insights:</strong> This insight focuses on 1on1 relationship restoration. The <strong>AI Dev Team</strong> enjoys a virtuous cycle with a score of <strong>8.5</strong> due to the leader's use of open-ended questions. Conversely, the <strong>Product Design Team</strong> has plunged to a high-risk satisfaction level of <strong>3.2</strong> due to authoritative meeting control, making correction of directing behaviors highly recommended.
+                          </>
+                        ) : (
+                          <>
+                            <strong>만족도 지표 종합 분석 인사이트:</strong> 1on1 관계성 회복 중심의 인사이트입니다. 
+                            <strong> AI개발팀</strong>은 리더의 개방적 질문 활용도로 만족도 <strong>8.5</strong>의 선순환 시너지를 구가 중이나, 
+                            <strong> 프로덕트 디자인팀</strong>은 권위적 미팅 지휘 성향에 따라 만족도 <strong>3.2</strong>의 최저 위험에 봉착해 지시 성향 시정 개입이 극구 강권됩니다.
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1596,7 +1728,7 @@ export default function App() {
                     <div>
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
                         <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5 font-sans">
-                          1on1 실행 지표 (주기 및 태도 실천도)
+                          {lang === "en" ? "1on1 Execution Metrics (Frequency & Attitude Action Compliance)" : "1on1 실행 지표 (주기 및 태도 실천도)"}
                         </h4>
                       </div>
                       
@@ -1604,25 +1736,25 @@ export default function App() {
                         <table className="w-full table-fixed min-w-[340px]">
                           <thead>
                             <tr className="border-b border-slate-800/40 pb-1.5">
-                              <th className="w-[30%] p-1.5 text-left text-[9.5px] text-slate-500 font-mono font-sans font-medium">부서 및 리더</th>
-                              {["주기 준수율", "미팅 지연율", "프렙 진행율"].map((m, idx) => (
+                              <th className="w-[30%] p-1.5 text-left text-[9.5px] text-slate-500 font-mono font-sans font-medium">{lang === "en" ? "Dept & Leader" : "부서 및 리더"}</th>
+                              {(lang === "en" ? ["Frequency Compliance", "Meeting Delay Rate", "Prep Rate"] : ["주기 준수율", "미팅 지연율", "프렙 진행율"]).map((m, idx) => (
                                 <th key={idx} className="w-[23.3%] p-1 text-center text-[9.5px] text-slate-400 font-bold font-sans">{m}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-855/40">
-                            {HEATMAP_EXECUTION_DATA.map((row, rIdx) => (
+                            {translatedHeatmapExecution.map((row, rIdx) => (
                               <tr key={rIdx} className="hover:bg-slate-900/10 transition-all border-b border-slate-900/40">
                                 <td className="p-2 py-2.5">
                                   <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-slate-200">{row.dept.replace("프로덕트 ", "")}</span>
-                                    <span className="text-[9.5px] text-slate-500 mt-0.5 font-mono">{row.leader}</span>
+                                    <span className="text-xs font-bold text-slate-200">{lang === "en" ? translateDept(row.dept) : row.dept.replace("프로덕트 ", "")}</span>
+                                    <span className="text-[9.5px] text-slate-500 mt-0.5 font-mono">{lang === "en" ? translateName(row.leader) : row.leader}</span>
                                   </div>
                                 </td>
                                 {row.metrics.map((m, mIdx) => {
                                   const rate = m.rate || 0;
                                   let bgStyle = "";
-                                  if (m.name === "미팅 지연율") {
+                                  if (m.name === "미팅 지연율" || m.name === "Meeting Delay Rate") {
                                     const isUnhealthy = rate > 30;
                                     const isCaution = rate >= 15 && rate <= 30;
                                     if (isUnhealthy) {
@@ -1684,9 +1816,17 @@ export default function App() {
 
                     <div className="mt-2.5">
                       <div className="p-3 bg-[#0B0F13]/40 border border-[#1e293b] rounded-lg text-[11px] text-slate-400 leading-normal font-sans font-medium">
-                        <strong>실행 지표 종합 분석 인사이트:</strong> 1on1 약속 이행 태도에 대한 인사이트입니다. 
-                        <strong> 플랫폼인프라팀</strong>은 서버 장애 이슈 매몰에 기인하여 주기 준수율이 <strong>32%</strong>에 그쳐 만성적 심리방치가 심각하며, 
-                        <strong> 그로스마케팅팀</strong>은 높은 이수 완성도(준수율 78%)를 기조로 실무 완결 협업을 건강하게 수호하고 있습니다.
+                        {lang === "en" ? (
+                          <>
+                            <strong>Execution Metrics Comprehensive Analysis Insights:</strong> This insight highlights 1on1 commitment fulfillment behaviors. The <strong>Platform Infrastructure Team</strong> exhibits severe chronic neglect with a frequency compliance of only <strong>32%</strong> due to being buried in server crash issues. Meanwhile, the <strong>Growth Marketing Team</strong> is maintaining healthy collaboration with a high completion rate of <strong>78%</strong>.
+                          </>
+                        ) : (
+                          <>
+                            <strong>실행 지표 종합 분석 인사이트:</strong> 1on1 약속 이행 태도에 대한 인사이트입니다. 
+                            <strong> 플랫폼인프라팀</strong>은 서버 장애 이슈 매몰에 기인하여 주기 준수율이 <strong>32%</strong>에 그쳐 만성적 심리방치가 심각하며, 
+                            <strong> 그로스마케팅팀</strong>은 높은 이수 완성도(준수율 78%)를 기조로 실무 완결 협업을 건강하게 수호하고 있습니다.
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1698,9 +1838,11 @@ export default function App() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-855 pb-3">
                     <div>
                       <h3 className="text-xs font-bold text-white font-sans uppercase tracking-wider flex items-center gap-2">
-                        팀별 1on1 트렌드리서치 시계열 (만족도/몰입도)
+                        {lang === "en" ? "Time-Series 1on1 Trend Research by Team (Satisfaction/Engagement)" : "팀별 1on1 트렌드리서치 시계열 (만족도/몰입도)"}
                       </h3>
-                      <p className="text-[10px] text-slate-400 font-sans mt-0.5">선택한 특정 부서 장기 면담 온도를 통계 분석하여 추이를 진단합니다.</p>
+                      <p className="text-[10px] text-slate-400 font-sans mt-0.5">
+                        {lang === "en" ? "Statistically analyzes long-term meeting temperatures of the selected department to diagnose trends." : "선택한 특정 부서 장기 면담 온도를 통계 분석하여 추이를 진단합니다."}
+                      </p>
                     </div>
                     
                     {/* Team selectors */}
@@ -1716,7 +1858,7 @@ export default function App() {
                               : "bg-[#0E1217] text-slate-400 border border-slate-800 hover:text-slate-200"
                           }`}
                         >
-                          {tName.replace("프로덕트 ", "")}
+                          {lang === "en" ? translateDept(tName) : tName.replace("프로덕트 ", "")}
                         </button>
                       ))}
                     </div>
@@ -1738,7 +1880,7 @@ export default function App() {
                         <Line 
                           type="monotone" 
                           dataKey="satisfaction" 
-                          name="1on1 만족도" 
+                          name={lang === "en" ? "1on1 Satisfaction" : "1on1 만족도"} 
                           stroke="#10b981" 
                           strokeWidth={2.5} 
                           activeDot={{ r: 8 }} 
@@ -1746,14 +1888,14 @@ export default function App() {
                         <Line 
                           type="monotone" 
                           dataKey="engagement" 
-                          name="업무 몰입도" 
+                          name={lang === "en" ? "Work Engagement" : "업무 몰입도"} 
                           stroke="#3b82f6" 
                           strokeWidth={2.5} 
                         />
                         <Line 
                           type="monotone" 
                           dataKey="growth" 
-                          name="성장 만족도" 
+                          name={lang === "en" ? "Growth Satisfaction" : "성장 만족도"} 
                           stroke="#f59e0b" 
                           strokeWidth={2.5} 
                         />
@@ -1762,25 +1904,57 @@ export default function App() {
                   </div>
 
                   {/* Team-Specific Detail Insight Opinion Card */}
-                  <div className="p-3 bg-[#0B0F13]/40 border border-[#1e293b] rounded-lg text-[11px] text-slate-350 leading-normal font-sans font-medium">
+                  <div className="p-3 bg-[#0B0F13]/40 border border-[#1e293b] rounded-lg text-[11px] text-slate-355 leading-normal font-sans font-medium">
                     {selectedTimeSeriesTeam === "AI개발팀" && (
                       <p>
-                        <strong>AI개발팀 분석 의견:</strong> 손민아 리더의 사려 깊은 대화 및 적극적 약속 이행으로 인해 1on1 만족도가 5월 기준 <strong>8.5</strong>로 극대화되었으며, 정서 안정 성과로 업무 몰입도가 동반 고점을 기록하는 선순환 구도를 구축하고 있습니다.
+                        {lang === "en" ? (
+                          <>
+                            <strong>AI Dev Team Analysis:</strong> Thanks to Leader Mina's thoughtful conversations and active commitment, 1on1 satisfaction peaked at <strong>8.5</strong> in May, building a virtuous cycle where work engagement matches this high point as a result of emotional stability.
+                          </>
+                        ) : (
+                          <>
+                            <strong>AI개발팀 분석 의견:</strong> 손민아 리더의 사려 깊은 대화 및 적극적 약속 이행으로 인해 1on1 만족도가 5월 기준 <strong>8.5</strong>로 극대화되었으며, 정서 안정 성과로 업무 몰입도가 동반 고점을 기록하는 선순환 구도를 구축하고 있습니다.
+                          </>
+                        )}
                       </p>
                     )}
                     {selectedTimeSeriesTeam === "프로덕트 디자인팀" && (
                       <p>
-                        <strong>프로덕트 디자인팀 분석 의견:</strong> 권위적 소통 패턴 및 당일 약속 브레이킹이 누적되면서 만족도가 연초 5.5에서 5월 기준 <strong>3.2</strong>까지 연속 하락하였습니다. 추가적 하향 위험 차단을 위해 즉각적인 리더십 코칭 및 세션 태도 시정이 강권됩니다.
+                        {lang === "en" ? (
+                          <>
+                            <strong>Product Design Team Analysis:</strong> Due to accumulated authoritative communication patterns and last-minute cancellations, satisfaction has declined steadily from 5.5 at the beginning of the year to <strong>3.2</strong> in May. Immediate leadership coaching and behavior correction are highly recommended to prevent further decline.
+                          </>
+                        ) : (
+                          <>
+                            <strong>프로덕트 디자인팀 분석 의견:</strong> 권위적 소통 패턴 및 당일 약속 브레이킹이 누적되면서 만족도가 연초 5.5에서 5월 기준 <strong>3.2</strong>까지 연속 하락하였습니다. 추가적 하향 위험 차단을 위해 즉각적인 리더십 코칭 및 세션 태도 시정이 강권됩니다.
+                          </>
+                        )}
                       </p>
                     )}
                     {selectedTimeSeriesTeam === "플랫폼인프라팀" && (
                       <p>
-                        <strong>플랫폼인프라팀 분석 의견:</strong> 시스템 정비 과부하로 면담 일정이 유예되는 상황에서 구성원들의 전반적 몰입 평점이 5월 기준 <strong>5.5</strong> 선으로 침체되어 있습니다. 주기 이행 및 주기 정기성 회복이 일차 과제입니다.
+                        {lang === "en" ? (
+                          <>
+                            <strong>Platform Infra Team Analysis:</strong> With meeting schedules deferred due to system maintenance overloads, members' overall engagement score is stagnant at <strong>5.5</strong> in May. Ensuring meeting compliance and restoring regular cadence are the primary objectives.
+                          </>
+                        ) : (
+                          <>
+                            <strong>플랫폼인프라팀 분석 의견:</strong> 시스템 정비 과부하로 면담 일정이 유예되는 상황에서 구성원들의 전반적 몰입 평점이 5월 기준 <strong>5.5</strong> 선으로 침체되어 있습니다. 주기 이행 및 주기 정기성 회복이 일차 과제입니다.
+                          </>
+                        )}
                       </p>
                     )}
                     {selectedTimeSeriesTeam === "그로스마케팅팀" && (
                       <p>
-                        <strong>그로스마케팅팀 분석 의견:</strong> 성과 부하에 따른 피로도가 누적 제기되고 있으나, 활발한 의견 공유 및 양 방향 소통으로 만족도가 <strong>6.5</strong>대를 완만히 수호하고 있습니다.
+                        {lang === "en" ? (
+                          <>
+                            <strong>Growth Marketing Team Analysis:</strong> While fatigue from high performance pressure is being reported, a moderate satisfaction rating of <strong>6.5</strong> is being maintained through active opinion sharing and two-way communication.
+                          </>
+                        ) : (
+                          <>
+                            <strong>그로스마케팅팀 분석 의견:</strong> 성과 부하에 따른 피로도가 누적 제기되고 있으나, 활발한 의견 공유 및 양 방향 소통으로 만족도가 <strong>6.5</strong>대를 완만히 수호하고 있습니다.
+                          </>
+                        )}
                       </p>
                     )}
                   </div>
@@ -1788,7 +1962,6 @@ export default function App() {
 
               </div>
             )}
-
 
 
             {/* TAB 4: 1on1 만족도 상세분석 */}
@@ -1803,24 +1976,26 @@ export default function App() {
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3.5">
                         <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5 font-sans">
                           <TrendingUp className="h-4 w-4 text-teal-400" />
-                          소통 온도차 비대칭성 분석 (정치/밀착 격차)
+                          {lang === "en" ? "Communication Temperature Gap Asymmetry Analysis" : "소통 온도차 비대칭성 분석 (정치/밀착 격차)"}
                         </h4>
-                        <span className="text-[10px] bg-rose-500/10 text-rose-450 px-2 py-0.5 rounded font-bold">
-                          격차 위험 주의보
+                        <span className="text-[10px] bg-rose-500/10 text-rose-455 px-2 py-0.5 rounded font-bold">
+                          {lang === "en" ? "Gap Risk Advisory" : "격차 위험 주의보"}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 font-sans mb-3 leading-relaxed">
-                        리더가 부여한 원온원 자가 평가 대비, 구성원이 익명 체감한 밀착 정열도 격차 비대칭성 레이아웃입니다. 격차 폭이 <strong>0.8점 이상(🚨)</strong>인 경우 괴리 차단 인터벤션이 강권됩니다.
+                        {lang === "en" 
+                          ? "Asymmetry layout comparing the leader's self-evaluation against members' anonymous perception of 1on1 alignment. For gaps exceeding 0.8 points (🚨), gap containment intervention is highly recommended."
+                          : "리더가 부여한 원온원 자가 평가 대비, 구성원이 익명 체감한 밀착 정열도 격차 비대칭성 레이아웃입니다. 격차 폭이 0.8점 이상(🚨)인 경우 괴리 차단 인터벤션이 강권됩니다."}
                       </p>
 
                       <div className="h-[280px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={[
-                              { name: "AI개발팀", leader: 8.2, member: 8.5 },
-                              { name: "그로스마케팅팀", leader: 7.2, member: 6.5 },
-                              { name: "플랫폼인프라팀", leader: 6.8, member: 5.5 },
-                              { name: "프로덕트 디자인팀", leader: 6.5, member: 3.2 }
+                              { name: lang === "en" ? "AI Dev Team" : "AI개발팀", leader: 8.2, member: 8.5 },
+                              { name: lang === "en" ? "Growth Marketing" : "그로스마케팅팀", leader: 7.2, member: 6.5 },
+                              { name: lang === "en" ? "Platform Infra" : "플랫폼인프라팀", leader: 6.8, member: 5.5 },
+                              { name: lang === "en" ? "Product Design" : "프로덕트 디자인팀", leader: 6.5, member: 3.2 }
                             ]}
                             margin={{ top: 20, right: 10, left: -25, bottom: 0 }}
                           >
@@ -1829,8 +2004,8 @@ export default function App() {
                             <YAxis stroke="#2dd4bf" fontSize={10} domain={[0, 10]} tickLine={false} />
                             <Tooltip contentStyle={{ backgroundColor: '#14181F', borderColor: '#334155', color: '#fff' }} />
                             <Legend wrapperStyle={{ fontSize: '10px' }} />
-                            <Bar dataKey="leader" name="리더 자가평가" fill="#f59e0b" maxBarSize={30} />
-                            <Bar dataKey="member" name="구성원 체감" fill="#14b8a6" maxBarSize={30} />
+                            <Bar dataKey="leader" name={lang === "en" ? "Leader Self-Evaluation" : "리더 자가평가"} fill="#f59e0b" maxBarSize={30} />
+                            <Bar dataKey="member" name={lang === "en" ? "Member Perception" : "구성원 체감"} fill="#14b8a6" maxBarSize={30} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1840,11 +2015,20 @@ export default function App() {
                       <div className="p-2.5 bg-[#0B0F13]/40 border border-[#1e293b] rounded-lg space-y-1">
                         <span className="text-[10px] font-bold text-rose-455 block flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
-                          소통 비대칭성 격차 경고 부서 (격차 0.8점 초과)
+                          {lang === "en" ? "Communication Asymmetry Gap Warning Departments (Gap > 0.8)" : "소통 비대칭성 격차 경고 부서 (격차 0.8점 초과)"}
                         </span>
                         <div className="text-[10.5px] text-slate-350 font-sans space-y-1 font-medium leading-relaxed">
-                          <p>• <strong>프로덕트 디자인팀</strong>: 소통 격차 <span className="text-rose-400 font-bold">3.3점</span> (심리적 통제 및 방임 극대화) 🚨</p>
-                          <p>• <strong>플랫폼인프라팀</strong>: 소통 격차 <span className="text-rose-400 font-bold">1.7점</span> (소형 업무 위주 면담 피로도) 🚨</p>
+                          {lang === "en" ? (
+                            <>
+                              <p>• <strong>Product Design Team</strong>: Comm Gap <span className="text-rose-400 font-bold">3.3 pts</span> (Max psychological control & neglect) 🚨</p>
+                              <p>• <strong>Platform Infra Team</strong>: Comm Gap <span className="text-rose-400 font-bold">1.7 pts</span> (High fatigue from task-oriented meetings) 🚨</p>
+                            </>
+                          ) : (
+                            <>
+                              <p>• <strong>프로덕트 디자인팀</strong>: 소통 격차 <span className="text-rose-400 font-bold">3.3점</span> (심리적 통제 및 방임 극대화) 🚨</p>
+                              <p>• <strong>플랫폼인프라팀</strong>: 소통 격차 <span className="text-rose-400 font-bold">1.7점</span> (소형 업무 위주 면담 피로도) 🚨</p>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1856,11 +2040,88 @@ export default function App() {
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3.5">
                         <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5 font-sans">
                           <MessageSquare className="h-4 w-4 text-teal-400" />
-                          1on1 대화 점유율 비율 (Talk Ratio Analysis)
+                          {lang === "en" ? "1on1 Talk Ratio Analysis" : "1on1 대화 점유율 비율 (Talk Ratio Analysis)"}
                         </h4>
                         <span className="text-[10px] bg-teal-500/10 text-teal-400 px-2 py-0.5 rounded font-bold">
-                          리더 3 : 구성원 7 준칙
+                          {lang === "en" ? "Leader 3 : Member 7 Rule" : "리더 3 : 구성원 7 준칙"}
                         </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-sans mb-3 leading-relaxed">
+                        {lang === "en"
+                          ? "Based on STT speech filtering, this represents speech volume distribution. Higher compliance with the 30% Leader : 70% Member standard rule optimizes autonomous engagement trust."
+                          : "STT 음성 필터링 기술 기반, 리더 및 구성원의 언어 발화 비중 분석 결과입니다. 오블릿 표준 원칙인 리더 30% : 구성원 70% 준수율이 높을수록 구성원의 자율 몰입 신뢰도가 최적으로 작용합니다."}
+                      </p>
+
+                      <div className="h-[280px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            layout="vertical"
+                            data={[
+                              { name: lang === "en" ? "AI Dev" : "AI개발팀", leaderTalk: 28, memberTalk: 72 },
+                              { name: lang === "en" ? "Marketing" : "그로스마케팅팀", leaderTalk: 35, memberTalk: 65 },
+                              { name: lang === "en" ? "Infra" : "플랫폼인프라팀", leaderTalk: 45, memberTalk: 55 },
+                              { name: lang === "en" ? "Design" : "프로덕트 디자인팀", leaderTalk: 68, memberTalk: 32 }
+                            ]}
+                            margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#223049" />
+                            <XAxis type="number" domain={[0, 100]} stroke="#64748B" fontSize={11} tickLine={false} unit="%" />
+                            <YAxis type="category" dataKey="name" stroke="#64748B" fontSize={11} tickLine={false} width={80} />
+                            <Tooltip contentStyle={{ backgroundColor: '#14181F', borderColor: '#334155', color: '#fff' }} />
+                            <Legend wrapperStyle={{ fontSize: '10px' }} />
+                            <Bar dataKey="leaderTalk" name={lang === "en" ? "Leader Talk Volume (%)" : "리더 발화량 (%)"} stackId="talkStack" fill="#f43f5e" maxBarSize={20} />
+                            <Bar dataKey="memberTalk" name={lang === "en" ? "Member Talk Volume (%)" : "구성원 발화량 (%)"} stackId="talkStack" fill="#14b8a6" maxBarSize={20} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      <div className="p-2.5 bg-teal-500/10 border border-teal-500/20 rounded-lg space-y-1">
+                        <span className="text-[10px] font-bold text-teal-400 block flex items-center gap-1.5">
+                          <CheckCircle className="h-3.5 w-3.5 text-teal-400" />
+                          {lang === "en" ? "Talk Volume Standard Deviation Compliance & Solution Advice" : "발화량 표준 오차 준수 상태 및 솔루션 제언"}
+                        </span>
+                        <div className="text-[10.5px] text-slate-350 font-sans space-y-1 font-medium leading-relaxed">
+                          {lang === "en" ? (
+                            <>
+                              <p>• <strong>Warning Dept</strong>: <span className="text-rose-455 font-bold">Product Design Team (68%)</span>, Leader's monologue barrier is causing friction 🚨</p>
+                              <p>• <strong>Exemplary Compliance</strong>: <span className="text-teal-400 font-bold">AI Dev Team (28%)</span>, Perfect implementation of active listening & open questions 🟢</p>
+                            </>
+                          ) : (
+                            <>
+                              <p>• <strong>경고 부서</strong>: <span className="text-rose-450 font-bold">프로덕트 디자인팀 (68%)</span>, 리더의 독점적 훈조 마찰 장벽 발생 🚨</p>
+                              <p>• <strong>준수 우수</strong>: <span className="text-teal-400 font-bold">AI개발팀 (28%)</span>, 모범적인 경청 및 개방적 질문 활용 완벽 구현 🟢</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Moved & Replaced Satisfaction Trend Area Chart (Now showing Leader vs Member Satisfaction in a 50/50 Grid with              </div>
+            )}          </div>
+                      <p className="text-[10px] text-slate-500">
+                        {lang === "en" 
+                          ? "\"Sincere listening, reliable career support, consistent cadence\" - 82% approval rate."
+                          : "\"경청 태도 성설, 든든한 경업 수용, 정기 진행\" 부문 82% 지지율."}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-[#0E1217] rounded-lg border border-slate-800">
+                      <div className="text-rose-400 font-bold mb-1 flex items-center gap-1">
+                        {lang === "en" ? "⚠ Dissatisfied Meeting Emotions" : "⚠ 면담 불만 감정"}
+                      </div>
+                      <p className="text-[10px] text-slate-500">
+                        {lang === "en"
+                          ? "\"Superficial check-ins, unkept commitments, focus on warnings\" - 58% detection rate."
+                          : "\"형식적 체크인, 약속 조치 미행, 긴축 통보 위주\" 부문 58% 검출."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}                       </span>
                       </div>
                       <p className="text-[11px] text-slate-400 font-sans mb-3 leading-relaxed">
                         STT 음성 필터링 기술 기반, 리더 및 구성원의 언어 발화 비중 분석 결과입니다. 오블릿 표준 원칙인 <strong>리더 30% : 구성원 70% 준수율</strong>이 높을수록 구성원의 자율 몰입 신뢰도가 최적으로 작용합니다.
@@ -1957,10 +2218,12 @@ export default function App() {
                     <div>
                       <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3.5 border-b border-slate-800 pb-2 font-sans">
                         <Users className="h-4 w-4 text-rose-500" />
-                        비정상 신호 감지 리더 (격차/발화 불량)
+                        {lang === "en" ? "Anomaly Signal Detected Leaders" : "비정상 신호 감지 리더 (격차/발화 불량)"}
                       </h3>
-                      <p className="text-[11px] text-slate-400 font-sans mb-3 leading-relaxed">
-                        익명 1on1 만족도 격차가 너무 크거나 발화 비율 불균형(리더 독점) 또는 면담 불참 과도로 경고등이 켜진 관리 리더 명단입니다.
+                      <p className="text-[11px] text-slate-400 font-sans mb-3 leading-relaxed font-normal">
+                        {lang === "en"
+                          ? "List of managers flagged with excessive 1on1 satisfaction gaps, speech imbalance (leader dominance), or meeting attendance failure."
+                          : "익명 1on1 만족도 격차가 너무 크거나 발화 비율 불균형(리더 독점) 또는 면담 불참 과도로 경고등이 켜진 관리 리더 명단입니다."}
                       </p>
 
                       <div className="space-y-3">
@@ -1968,11 +2231,15 @@ export default function App() {
                         <div className="p-3 bg-[#0E1217] rounded-lg border border-rose-500/10 hover:border-rose-500/25 transition-all">
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-xs font-bold text-slate-200">강석주</span>
-                              <span className="text-[9px] text-slate-500">프로덕트 디자인팀</span>
+                              <span className="text-xs font-bold text-slate-200">
+                                {lang === "en" ? translateName("강석주") : "강석주"}
+                              </span>
+                              <span className="text-[9px] text-slate-500">
+                                {lang === "en" ? translateDept("프로덕트 디자인팀") : "프로덕트 디자인팀"}
+                              </span>
                             </div>
                             <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-rose-500/10 text-rose-450 border-rose-500/20">
-                              위험 경고
+                              {lang === "en" ? "Danger Warning" : "위험 경고"}
                             </span>
                           </div>
                           
@@ -1980,8 +2247,10 @@ export default function App() {
                           <div className="grid grid-cols-2 gap-3 text-[10px] bg-[#14181F]/40 p-2 rounded border border-slate-800">
                             <div>
                               <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-slate-500">소통 격차</span>
-                                <span className="text-rose-400 font-bold">3.3점 (심각)</span>
+                                <span className="text-slate-500">{lang === "en" ? "Comm Gap" : "소통 격차"}</span>
+                                <span className="text-rose-400 font-bold">
+                                  {lang === "en" ? "3.3 pts (Severe)" : "3.3점 (심각)"}
+                                </span>
                               </div>
                               <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
                                 <div className="h-full bg-rose-500" style={{ width: '85%' }} />
@@ -1989,8 +2258,10 @@ export default function App() {
                             </div>
                             <div>
                               <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-slate-500">리더 발화율</span>
-                                <span className="text-rose-400 font-bold">68% (독점)</span>
+                                <span className="text-slate-500">{lang === "en" ? "Talk Ratio" : "리더 발화율"}</span>
+                                <span className="text-rose-400 font-bold">
+                                  {lang === "en" ? "68% (Dominant)" : "68% (독점)"}
+                                </span>
                               </div>
                               <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
                                 <div className="h-full bg-rose-400" style={{ width: '68%' }} />
@@ -1998,7 +2269,9 @@ export default function App() {
                             </div>
                           </div>
                           <p className="text-[10px] text-slate-400 leading-normal mt-1.5">
-                            ※ 일방향 지시 빈도가 지나치게 높아 자율성 무력화 및 핵심 시니어 이탈 위험 유발.
+                            {lang === "en"
+                              ? "* Extremely high frequency of unilateral instruction, neutralizing autonomy and triggering turnover risk among core senior staff."
+                              : "※ 일방향 지시 빈도가 지나치게 높아 자율성 무력화 및 핵심 시니어 이탈 위험 유발."}
                           </p>
                         </div>
 
@@ -2006,11 +2279,15 @@ export default function App() {
                         <div className="p-3 bg-[#0E1217] rounded-lg border border-amber-500/10 hover:border-amber-500/25 transition-all">
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-xs font-bold text-slate-200">최무현</span>
-                              <span className="text-[9px] text-slate-500">플랫폼인프라팀</span>
+                              <span className="text-xs font-bold text-slate-200">
+                                {lang === "en" ? translateName("최무현") : "최무현"}
+                              </span>
+                              <span className="text-[9px] text-slate-500">
+                                {lang === "en" ? translateDept("플랫폼인프라팀") : "플랫폼인프라팀"}
+                              </span>
                             </div>
                             <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-amber-500/10 text-amber-400 border-amber-500/20">
-                              모니터링
+                              {lang === "en" ? "Monitoring" : "모니터링"}
                             </span>
                           </div>
                           
@@ -2018,8 +2295,10 @@ export default function App() {
                           <div className="grid grid-cols-2 gap-3 text-[10px] bg-[#14181F]/40 p-2 rounded border border-slate-800">
                             <div>
                               <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-slate-500">소통 격차</span>
-                                <span className="text-amber-400 font-bold">1.3점 (주의)</span>
+                                <span className="text-slate-500">{lang === "en" ? "Comm Gap" : "소통 격차"}</span>
+                                <span className="text-amber-400 font-bold">
+                                  {lang === "en" ? "1.3 pts (Caution)" : "1.3점 (주의)"}
+                                </span>
                               </div>
                               <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
                                 <div className="h-full bg-amber-500" style={{ width: '55%' }} />
@@ -2027,8 +2306,10 @@ export default function App() {
                             </div>
                             <div>
                               <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-slate-500">면담 불참률</span>
-                                <span className="text-amber-400 font-bold">80% (해태)</span>
+                                <span className="text-slate-500">{lang === "en" ? "Missed 1on1" : "면담 불참률"}</span>
+                                <span className="text-amber-400 font-bold">
+                                  {lang === "en" ? "80% (Neglect)" : "80% (해태)"}
+                                </span>
                               </div>
                               <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
                                 <div className="h-full bg-amber-400" style={{ width: '80%' }} />
@@ -2036,7 +2317,9 @@ export default function App() {
                             </div>
                           </div>
                           <p className="text-[10px] text-slate-400 leading-normal mt-1.5">
-                            ※ 원온원 미이행 등 약속 이행 장애로 팀 피로도 유발 및 만족도 우하향 양상 지속.
+                            {lang === "en"
+                              ? "* Missed 1on1 commitments cause team fatigue and continue a downward trend in satisfaction."
+                              : "※ 원온원 미이행 등 약속 이행 장애로 팀 피로도 유발 및 만족도 우하향 양상 지속."}
                           </p>
                         </div>
                       </div>
@@ -2045,25 +2328,41 @@ export default function App() {
                     <div className="bg-rose-500/5 border border-rose-500/10 p-2 rounded-lg space-y-0.5 mt-4">
                       <span className="text-[10px] font-bold text-rose-400 block flex items-center gap-1">
                         <ShieldAlert className="h-3 w-3" />
-                        권고 조치 사항
+                        {lang === "en" ? "Recommended Actions" : "권고 조치 사항"}
                       </span>
                       <p className="text-[9.5px] text-slate-400 leading-normal font-sans font-medium">
-                        소통 위험 대상 리더군에게는 소통 개선 세션 의무 참여 및 주간 정기 면담 수립 현황 점검 조치가 수립됩니다.
+                        {lang === "en"
+                          ? "Leaders at risk are required to participate in communication sessions and undergo weekly audits of 1on1 scheduler setup."
+                          : "소통 위험 대상 리더군에게는 소통 개선 세션 의무 참여 및 주간 정기 면담 수립 현황 점검 조치가 수립됩니다."}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-slate-800 bg-[#14181F] p-4 font-sans">
-                  <h4 className="text-xs font-bold text-slate-200 mb-2.5">전사 1on1 주요 감정 키워드 비율</h4>
+                  <h4 className="text-xs font-bold text-slate-200 mb-2.5">
+                    {lang === "en" ? "Company-wide 1on1 Emotion Keyword Ratio" : "전사 1on1 주요 감정 키워드 비율"}
+                  </h4>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="p-3 bg-[#0E1217] rounded-lg border border-slate-800">
-                      <div className="text-emerald-400 font-bold mb-1 flex items-center gap-1">✔ 면담 긍정 반응</div>
-                      <p className="text-[10px] text-slate-500">"경청 태도 성설, 든든한 경업 수용, 정기 진행" 부문 82% 지지율.</p>
+                      <div className="text-emerald-400 font-bold mb-1 flex items-center gap-1">
+                        {lang === "en" ? "✔ Positive Feedback" : "✔ 면담 긍정 반응"}
+                      </div>
+                      <p className="text-[10px] text-slate-500">
+                        {lang === "en"
+                          ? "\"Active listening, solid support, regular cadence\" shows an 82% approval rating."
+                          : '"경청 태도 성설, 든든한 경업 수용, 정기 진행" 부문 82% 지지율.'}
+                      </p>
                     </div>
                     <div className="p-3 bg-[#0E1217] rounded-lg border border-slate-800">
-                      <div className="text-rose-400 font-bold mb-1 flex items-center gap-1">⚠ 면담 불만 감정</div>
-                      <p className="text-[10px] text-slate-500">"형식적 체크인, 약속 조치 미행, 긴축 통보 위주" 부문 58% 검출.</p>
+                      <div className="text-rose-400 font-bold mb-1 flex items-center gap-1">
+                        {lang === "en" ? "⚠ Dissatisfied Sentiment" : "⚠ 면담 불만 감정"}
+                      </div>
+                      <p className="text-[10px] text-slate-500">
+                        {lang === "en"
+                          ? "\"Formal check-ins, unkept action promises, restructures/layoffs focus\" has a 58% detection rate."
+                          : '"형식적 체크인, 약속 조치 미행, 긴축 통보 위주" 부문 58% 검출.'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -2072,7 +2371,7 @@ export default function App() {
 
             {/* TAB 5: 병목 (Friction & Process Bottleneck) */}
             {activeTab === "bottleneck" && (() => {
-              const bottleneckData = [
+              const bottleneckData = lang === "ko" ? [
                 {
                   id: "ai-dev",
                   deptName: "AI개발팀",
@@ -2165,13 +2464,106 @@ export default function App() {
                     "광고 매체의 기술적 업데이트를 즉각 테스트해 볼 수 있도록 저위험 소액 실험 마케팅 샌드박스 예산을 추가 설정해 퍼포먼스 창출 기조를 유지하십시오."
                   ]
                 }
+              ] : [
+                {
+                  id: "ai-dev",
+                  deptName: "AI Dev Team",
+                  bottleneckScore: 92,
+                  status: "Severe",
+                  statusColor: "text-rose-400 border-rose-500/20 bg-rose-500/5",
+                  severity: "Critical",
+                  gaugeColor: "bg-rose-500",
+                  summary: "Risk of commercial build halt due to core technology monopoly and lack of backup engineers",
+                  scriptQuote: "I am the only one holding the core ultra-lightweight LLM commercialization build knowledge, making it stressful even to take annual leave. With weekly overtime continuing for four consecutive weeks, I have hit my mental limit and am seriously contemplating if I should look for other options. (Excerpt from 1on1 Records)",
+                  emotions: [
+                    { label: "Job Burnout", value: 48, color: "bg-rose-500" },
+                    { label: "Schedule Pressure", value: 37, color: "bg-amber-500" },
+                    { label: "Achievement & Relief", value: 15, color: "bg-slate-700" }
+                  ],
+                  targetPerson: "John (AI Dev Team)",
+                  targetLeader: "Andrew (AI Dev Leader / Director)",
+                  actionPlans: [
+                    "Mandatorily establish and execute [Daily Core Engine Knowledge Transfer Sessions & Code Ownership Distribution Schedules] with AI Dev Team members within June.",
+                    "Fully assign a backup sub-lead engineer to disperse the excessive overtime concentrated on the single chief engine developer, and buffer and adjust milestone deadlines on a weekly basis.",
+                    "Immediately grant regular burnout recovery leave and execute instant performance rewards for overtime to Chief Developer John (AI Dev Team)."
+                  ]
+                },
+                {
+                  id: "design",
+                  deptName: "Product Design Team",
+                  bottleneckScore: 78,
+                  status: "Warning",
+                  statusColor: "text-amber-400 border-amber-500/25 bg-amber-500/5",
+                  severity: "Warning",
+                  gaugeColor: "bg-amber-500",
+                  summary: "Reduced design autonomy and delayed flow approval due to upper leader's monopoly over final decisions",
+                  scriptQuote: "Since decisions are mostly handed down top-down, not only juniors but even a senior like me feel helpless, thinking 'whatever we suggest, it'll end up being done the manager's way anyway.' The payment UX draft has been frozen waiting for approval for three weeks. (Excerpt from 1on1 Records)",
+                  emotions: [
+                    { label: "Autonomy Infringement", value: 52, color: "bg-amber-500" },
+                    { label: "Delay Fatigue", value: 33, color: "bg-rose-500" },
+                    { label: "Stable Sentiment", value: 15, color: "bg-slate-700" }
+                  ],
+                  targetPerson: "Chloe (Product Design Team)",
+                  targetLeader: "Steve (Product Design Leader / Manager)",
+                  actionPlans: [
+                    "Significantly delegate the exclusive final decision-making authority for the new service payment UX revamp flow down to Senior Designer Chloe.",
+                    "Team Leader Steve should stop top-down style guidance, reduce coaching to focus on 'direction alignment', and shift leadership tasks to a supportive R&R role that prevents friction.",
+                    "Activate a weekly 'Design Session Autonomy Initiative' in the team to quickly revitalize the depressed creative energy of team members."
+                  ]
+                },
+                {
+                  id: "infra",
+                  deptName: "Platform Infra Team",
+                  bottleneckScore: 65,
+                  status: "Caution",
+                  statusColor: "text-cyan-400 border-cyan-500/25 bg-cyan-500/5",
+                  severity: "Caution",
+                  gaugeColor: "bg-cyan-500",
+                  summary: "Skilled platform cloud infrastructure engineer buried in simple manual Excel settlement tasks, losing core role identity",
+                  scriptQuote: "I should be diving into server distribution or new infrastructure automation tasks, but instead, I am spending more than half of my resources manually verifying and entering Excel data requested by marketing and sales every month. I feel like I've hit a growth wall and have serious doubts about my long-term career. (Excerpt from 1on1 Records)",
+                  emotions: [
+                    { label: "Career Skepticism", value: 55, color: "bg-cyan-500" },
+                    { label: "Repetitive Task Fatigue", value: 30, color: "bg-amber-500" },
+                    { label: "Task Engagement", value: 15, color: "bg-slate-700" }
+                  ],
+                  targetPerson: "David (Platform Infra Team)",
+                  targetLeader: "Mark (Platform Infra Leader / Manager)",
+                  actionPlans: [
+                    "Convert the manual data settlement process requested by departments into a high-value development project called 'Settlement Automation Batch System Implementation', aligning Engineer David as its project lead.",
+                    "Officially transfer simple Excel and data index extraction labor to operations or temporary support roles to guarantee more than 75% of professional engineering resources for core infrastructure design.",
+                    "Team Leader Mark should normalize the periodic 1on1 meetings for technical career roadmaps to support and guide Engineer David in establishing a professional vision."
+                  ]
+                },
+                {
+                  id: "marketing",
+                  deptName: "Growth Marketing Team",
+                  bottleneckScore: 61,
+                  status: "Optimal",
+                  statusColor: "text-teal-400 border-teal-500/25 bg-teal-500/5",
+                  severity: "Optimal",
+                  gaugeColor: "bg-teal-500",
+                  summary: "Delayed approval for flexible budget execution against rapid shifts in global ad network CPC algorithms",
+                  scriptQuote: "When global marketing ad space algorithms shift drastically, we must boost CPC bids immediately to seize the golden window. However, the approval process going up to head-of-department level takes over a day, making us lose significant ad budget efficiency every time. It's extremely frustrating. (Excerpt from 1on1 Records)",
+                  emotions: [
+                    { label: "Process Frustration", value: 45, color: "bg-teal-500" },
+                    { label: "Performance Anxiety", value: 35, color: "bg-orange-500" },
+                    { label: "Organizational Alignment", value: 20, color: "bg-slate-700" }
+                  ],
+                  targetPerson: "Lily (Growth Marketing Team)",
+                  targetLeader: "Tom (Growth Marketing Leader / Manager)",
+                  actionPlans: [
+                    "Overhaul checkout fast-track regulations to allow Lily (Growth Marketing) to single-handedly deploy and boost up to 20% of the team budget for weekly marketing network fluctuations.",
+                    "Team Leader Tom should run a permanent global ad rates trend review table to support the marketer's initiative and actively resolve anxiety by providing timely performance feedback.",
+                    "Set up an additional low-risk micro-experiment marketing sandbox budget to test ad network technical updates instantly and maintain a high performance-driven atmosphere."
+                  ]
+                }
               ];
 
               const filteredData = selectedBottleneckDept === "all"
                 ? bottleneckData
                 : bottleneckData.filter(d => d.id === selectedBottleneckDept);
 
-              const activeMetrics = {
+              const activeMetrics = (lang === "ko" ? {
                 all: {
                   deptCount: "4개 탐지",
                   deptList: "AI개발, 디자인, 인프라, 마케팅",
@@ -2222,25 +2614,76 @@ export default function App() {
                   solution: "20% 단독 전결 집행",
                   solutionSub: "마케팅 샌드박스 패스트트랙"
                 }
-              }[selectedBottleneckDept] || {
-                deptCount: "4개 탐지",
-                deptList: "AI개발, 디자인, 인프라, 마케팅",
+              } : {
+                all: {
+                  deptCount: "4 Detected",
+                  deptList: "AI Dev, Design, Infra, Marketing",
+                  maxDept: "92%",
+                  maxDeptName: "AI Dev Team (Priority 1 Tech Monopoly)",
+                  primaryObstacle: "R&R Imbalance & Burnout",
+                  primaryObstacleSub: "Overtime & fatigue keywords accumulated",
+                  solution: "De-concentrate decision authority",
+                  solutionSub: "Reduce barriers via rapid approval"
+                },
+                "ai-dev": {
+                  deptCount: "AI Dev Team",
+                  deptList: "Lack of core development resources",
+                  maxDept: "92%",
+                  maxDeptName: "Severe (Critical)",
+                  primaryObstacle: "Burnout & Schedule Pressure",
+                  primaryObstacleSub: "Concentration of overtime on John",
+                  solution: "Knowledge Transfer & Buffer",
+                  solutionSub: "Activate code ownership sharing session"
+                },
+                design: {
+                  deptCount: "Product Design Team",
+                  deptList: "Decision monopoly & bottleneck",
+                  maxDept: "78%",
+                  maxDeptName: "Warning (Warning)",
+                  primaryObstacle: "Reduced Autonomy & Helplessness",
+                  primaryObstacleSub: "Payment UX design delayed for 3 weeks",
+                  solution: "Delegate decision authority downwards",
+                  solutionSub: "Expand Designer Chloe's decision rights"
+                },
+                infra: {
+                  deptCount: "Platform Infra Team",
+                  deptList: "Manual Excel settlement bottleneck",
+                  maxDept: "65%",
+                  maxDeptName: "Caution (Caution)",
+                  primaryObstacle: "Buried in repetitive copy tasks",
+                  primaryObstacleSub: "Infrastructure engineers losing momentum",
+                  solution: "Shift to automated settlement development",
+                  solutionSub: "Projectize new automation batch"
+                },
+                marketing: {
+                  deptCount: "Growth Marketing Team",
+                  deptList: "Global media response decision delay",
+                  maxDept: "61%",
+                  maxDeptName: "Caution (Caution)",
+                  primaryObstacle: "CPC boosting approval delay",
+                  primaryObstacleSub: "Losing the golden window for ad spending",
+                  solution: "Deploy 20% solo budget",
+                  solutionSub: "Sandbox fast-track process"
+                }
+              })[selectedBottleneckDept] || {
+                deptCount: lang === "ko" ? "4개 탐지" : "4 Detected",
+                deptList: lang === "ko" ? "AI개발, 디자인, 인프라, 마케팅" : "AI Dev, Design, Infra, Marketing",
                 maxDept: "92%",
-                maxDeptName: "AI개발팀 (기술 독점 리스크 1순위)",
-                primaryObstacle: "R&R 불균형 및 번아웃",
-                primaryObstacleSub: "특근 연장 피로 단어 집출 누적",
-                solution: "실무 전결권 하향 분산",
-                solutionSub: "신속 승인으로 피로 장벽 감소"
+                maxDeptName: lang === "ko" ? "AI개발팀 (기술 독점 리스크 1순위)" : "AI Dev Team (Priority 1 Tech Monopoly)",
+                primaryObstacle: lang === "ko" ? "R&R 불균형 및 번아웃" : "R&R Imbalance & Burnout",
+                primaryObstacleSub: lang === "ko" ? "특근 연장 피로 단어 집출 누적" : "Overtime & fatigue keywords accumulated",
+                solution: lang === "ko" ? "실무 전결권 하향 분산" : "De-concentrate decision authority",
+                solutionSub: lang === "ko" ? "신속 승인으로 피로 장벽 감소" : "Reduce barriers via rapid approval"
               };
 
               const wordCloudWords = [
-                { text: "리소스 부족", weight: 10, color: "from-rose-500 to-red-400 text-rose-400", depts: ["ai-dev", "infra"], percentage: 84 },
-                { text: "타 부서 협업 갈등", weight: 9, color: "from-amber-500 to-orange-400 text-amber-400", depts: ["marketing", "design"], percentage: 76 },
-                { text: "보수적 규정", weight: 8, color: "from-blue-500 to-indigo-400 text-blue-400", depts: ["design", "infra"], percentage: 65 },
-                { text: "의사결정 지연", weight: 8, color: "from-purple-500 to-pink-400 text-purple-400", depts: ["design"], percentage: 72 },
-                { text: "불명확한 R&R", weight: 7, color: "from-cyan-500 to-teal-400 text-teal-400", depts: ["marketing", "infra"], percentage: 59 },
-                { text: "단순 전사 반복", weight: 6, color: "from-emerald-500 to-teal-400 text-emerald-400", depts: ["infra"], percentage: 52 },
-                { text: "피드백 부재", weight: 6, color: "from-yellow-500 to-amber-400 text-yellow-405", depts: ["ai-dev", "marketing"], percentage: 48 }
+                { text: lang === "ko" ? "리소스 부족" : "Resource Deficit", weight: 10, color: "from-rose-500 to-red-400 text-rose-400", depts: ["ai-dev", "infra"], percentage: 84 },
+                { text: lang === "ko" ? "타 부서 협업 갈등" : "Inter-dept Friction", weight: 9, color: "from-amber-500 to-orange-400 text-amber-400", depts: ["marketing", "design"], percentage: 76 },
+                { text: lang === "ko" ? "보수적 규정" : "Conservative Rules", weight: 8, color: "from-blue-500 to-indigo-400 text-blue-400", depts: ["design", "infra"], percentage: 65 },
+                { text: lang === "ko" ? "의사결정 지연" : "Decision Latency", weight: 8, color: "from-purple-500 to-pink-400 text-purple-400", depts: ["design"], percentage: 72 },
+                { text: lang === "ko" ? "불명확한 R&R" : "Ambiguous R&R", weight: 7, color: "from-cyan-500 to-teal-400 text-teal-400", depts: ["marketing", "infra"], percentage: 59 },
+                { text: lang === "ko" ? "단순 전사 반복" : "Repetitive Tasks", weight: 6, color: "from-emerald-500 to-teal-400 text-emerald-400", depts: ["infra"], percentage: 52 },
+                { text: lang === "ko" ? "피드백 부재" : "No Feedback", weight: 6, color: "from-yellow-500 to-amber-400 text-yellow-405", depts: ["ai-dev", "marketing"], percentage: 48 }
               ];
 
               const filteredWords = selectedBottleneckDept === "all"
@@ -2255,18 +2698,24 @@ export default function App() {
                     <div className="flex items-center justify-between mb-3 border-b border-slate-800/60 pb-2.5">
                       <div className="flex items-center gap-1.5">
                         <Activity className="h-4 w-4 text-teal-450 animate-pulse" />
-                        <span className="text-xs font-bold text-slate-200">부서별 병목 진단 인덱스 (Department Roadblock Index)</span>
+                        <span className="text-xs font-bold text-slate-200">
+                          {lang === "ko" ? "부서별 병목 진단 인덱스 (Department Roadblock Index)" : "Department Roadblock Index"}
+                        </span>
                       </div>
-                      <span className="text-[9.5px] text-slate-500 font-medium">부서를 선택하면 해당 관점의 장애 분석과 처방 리포트가 실시간 동형화됩니다.</span>
+                      <span className="text-[9.5px] text-slate-500 font-medium">
+                        {lang === "ko" 
+                          ? "부서를 선택하면 해당 관점의 장애 분석과 처방 리포트가 실시간 동형화됩니다." 
+                          : "Select a department to view real-time synchronized roadblock analysis and action plans."}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                       {[
-                        { id: "all", label: "전체 부서 보기", count: 4, labelSub: "종합 진단", color: "text-teal-400", borderStyle: "border-teal-500/10" },
-                        { id: "ai-dev", label: "AI개발팀", count: 92, labelSub: "심각", color: "text-rose-455", borderStyle: "border-rose-500/20 hover:border-rose-500/40" },
-                        { id: "design", label: "프로덕트 디자인팀", count: 78, labelSub: "경고", color: "text-amber-400", borderStyle: "border-amber-500/20 hover:border-amber-500/40" },
-                        { id: "infra", label: "플랫폼인프라팀", count: 65, labelSub: "주의", color: "text-cyan-400", borderStyle: "border-cyan-500/20 hover:border-cyan-500/40" },
-                        { id: "marketing", label: "그로스마케팅팀", count: 61, labelSub: "양호", color: "text-teal-450", borderStyle: "border-teal-500/20 hover:border-teal-500/40" }
+                        { id: "all", label: lang === "ko" ? "전체 부서 보기" : "All Departments", count: 4, labelSub: lang === "ko" ? "종합 진단" : "Diagnosis", color: "text-teal-400", borderStyle: "border-teal-500/10" },
+                        { id: "ai-dev", label: lang === "ko" ? "AI개발팀" : "AI Dev Team", count: 92, labelSub: lang === "ko" ? "심각" : "Severe", color: "text-rose-455", borderStyle: "border-rose-500/20 hover:border-rose-500/40" },
+                        { id: "design", label: lang === "ko" ? "프로덕트 디자인팀" : "Product Design Team", count: 78, labelSub: lang === "ko" ? "경고" : "Warning", color: "text-amber-400", borderStyle: "border-amber-500/20 hover:border-amber-500/40" },
+                        { id: "infra", label: lang === "ko" ? "플랫폼인프라팀" : "Platform Infra Team", count: 65, labelSub: lang === "ko" ? "주의" : "Caution", color: "text-cyan-400", borderStyle: "border-cyan-500/20 hover:border-cyan-500/40" },
+                        { id: "marketing", label: lang === "ko" ? "그로스마케팅팀" : "Growth Marketing Team", count: 61, labelSub: lang === "ko" ? "양호" : "Optimal", color: "text-teal-450", borderStyle: "border-teal-500/20 hover:border-teal-500/40" }
                       ].map((btn) => {
                         const isSelected = selectedBottleneckDept === btn.id;
                         const scoreStr = btn.id === "all" ? "ALL" : `${btn.count}%`;
@@ -2296,7 +2745,9 @@ export default function App() {
                   {/* 2. Dynamic Summary Metrics Bar (Reacting to the selected index) */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-[#0E1217]/50 border border-slate-800/80 p-4 rounded-xl">
                     <div className="p-3.5 bg-[#14181F]/80 rounded-lg border border-slate-800 flex flex-col justify-between">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">진단 부서 필터</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                        {lang === "ko" ? "진단 부서 필터" : "Dept Filter"}
+                      </span>
                       <div className="flex items-baseline gap-1 mt-1">
                         <span className="text-sm font-bold text-white truncate max-w-full">{activeMetrics.deptCount}</span>
                       </div>
@@ -2304,7 +2755,9 @@ export default function App() {
                     </div>
 
                     <div className="p-3.5 bg-[#14181F]/80 rounded-lg border border-slate-800 flex flex-col justify-between">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">최대 병목 심각도</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                        {lang === "ko" ? "최대 병목 심각도" : "Max Severity"}
+                      </span>
                       <div className="flex items-baseline gap-1 mt-1">
                         <span className="text-xl font-bold text-rose-455 font-mono">{activeMetrics.maxDept}</span>
                       </div>
@@ -2312,7 +2765,9 @@ export default function App() {
                     </div>
 
                     <div className="p-3.5 bg-[#14181F]/80 rounded-lg border border-slate-800 flex flex-col justify-between">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">검출 최고 장애요인</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                        {lang === "ko" ? "검출 최고 장애요인" : "Primary Obstacle"}
+                      </span>
                       <div className="flex items-baseline gap-1 mt-1">
                         <span className="text-xs font-bold text-slate-200 truncate">{activeMetrics.primaryObstacle}</span>
                       </div>
@@ -2320,7 +2775,9 @@ export default function App() {
                     </div>
 
                     <div className="p-3.5 bg-[#14181F]/80 rounded-lg border border-slate-800 flex flex-col justify-between">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">대표 권장 솔루션</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                        {lang === "ko" ? "대표 권장 솔루션" : "Recommended Solution"}
+                      </span>
                       <div className="flex items-baseline gap-1 mt-1">
                         <span className="text-xs font-bold text-teal-450 truncate">{activeMetrics.solution}</span>
                       </div>
@@ -2336,12 +2793,19 @@ export default function App() {
                       <div>
                         <h4 className="text-xs font-bold text-slate-350 font-sans tracking-wide uppercase flex items-center gap-1.5 mb-2.5">
                           <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" />
-                          장애물 키워드 클라우드 (Roadblock Keywords)
+                          {lang === "ko" ? "장애물 키워드 클라우드 (Roadblock Keywords)" : "Roadblock Keywords"}
                         </h4>
                         <p className="text-[11px] text-slate-400 leading-normal mb-5">
-                          1on1 면담 대화 스크립트에서 실시간 NLP 모델링으로 추출한 직무 성장 저해 및 조직 병목 키워드입니다. 키워드가 크고 붉을수록 심도 있는 개입 수치가 시급함을 조명합니다.
+                          {lang === "ko"
+                            ? "1on1 면담 대화 스크립트에서 실시간 NLP 모델링으로 추출한 직무 성장 저해 및 조직 병목 키워드입니다. 키워드가 크고 붉을수록 심도 있는 개입 수치가 시급함을 조명합니다."
+                            : "Keywords indicating job growth obstacles and organizational bottlenecks extracted via real-time NLP modeling from 1on1 scripts. Larger and redder keywords demand urgent executive attention."}
                           <br className="mb-1" />
-                          <span className="text-teal-400 font-semibold">키워드를 클릭</span>하면 즉각 관련 부서 인덱스로 전환되며 상세 보고서를 분석할 수 있습니다.
+                          <span className="text-teal-400 font-semibold">
+                            {lang === "ko" ? "키워드를 클릭" : "Clicking a keyword"}
+                          </span>
+                          {lang === "ko"
+                            ? "하면 즉각 관련 부서 인덱스로 전환되며 상세 보고서를 분석할 수 있습니다."
+                            : " immediately switches to the corresponding department index for in-depth analysis."}
                         </p>
 
                         <div className="p-5 bg-[#0E1217]/60 rounded-xl border border-slate-850 min-h-[220px] flex flex-wrap items-center justify-center gap-3 select-none">
@@ -2378,10 +2842,12 @@ export default function App() {
                       </div>
 
                       <div className="flex items-center justify-between text-[9.5px] text-slate-550 border-t border-slate-800/55 pt-3">
-                        <span>자연어 처리(NLP) 결합분석 • 오차범위 ±4.2%</span>
+                        <span>
+                          {lang === "ko" ? "자연어 처리(NLP) 결합분석 • 오차범위 ±4.2%" : "NLP Unified Analysis • Margin of Error ±4.2%"}
+                        </span>
                         <span className="text-teal-450 font-bold flex items-center gap-1">
                           <Activity className="h-3 w-3 text-rose-500 animate-pulse" />
-                          가장 높은 병목 키워드: 리소스 부족 (84%)
+                          {lang === "ko" ? "가장 높은 병목 키워드: 리소스 부족 (84%)" : "Highest Bottleneck Keyword: Resource Deficit (84%)"}
                         </span>
                       </div>
                     </div>
@@ -2393,9 +2859,11 @@ export default function App() {
                           <div className="flex items-center justify-between bg-[#14181F] p-3 px-4 rounded-xl border border-slate-800">
                             <span className="text-xs font-bold text-white flex items-center gap-1.5">
                               <ShieldAlert className="h-4 w-4 text-rose-500" />
-                              종합 전사 병목 진단 리포트 (All Reports)
+                              {lang === "ko" ? "종합 전사 병목 진단 리포트 (All Reports)" : "Executive Roadblock Summary Reports"}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-semibold bg-slate-800 px-2 py-0.5 rounded">총 4개 부서 분석 중</span>
+                            <span className="text-[10px] text-slate-400 font-semibold bg-slate-800 px-2 py-0.5 rounded">
+                              {lang === "ko" ? "총 4개 부서 분석 중" : "Analyzing 4 Departments"}
+                            </span>
                           </div>
 
                           <div className="space-y-3">
@@ -2406,7 +2874,7 @@ export default function App() {
                                   <div className="flex items-start justify-between gap-1">
                                     <div>
                                       <span className="text-[11.5px] font-bold text-slate-100 flex items-center gap-1">
-                                        {dept.deptName} 리포트
+                                        {lang === "ko" ? `${dept.deptName} 리포트` : `${dept.deptName} Report`}
                                       </span>
                                       <p className="text-[11px] text-[#fbbf24] font-medium leading-snug mt-0.5">{dept.summary}</p>
                                     </div>
@@ -2419,17 +2887,23 @@ export default function App() {
 
                                   <div className="flex flex-col sm:flex-row gap-2 text-[10.5px] bg-[#0E1217]/40 p-2 rounded border border-slate-800/50">
                                     <div className="flex-1">
-                                      <span className="text-slate-500 block text-[9.5px]">실무 조치 대상자</span>
+                                      <span className="text-slate-500 block text-[9.5px]">
+                                        {lang === "ko" ? "실무 조치 대상자" : "Target Employee"}
+                                      </span>
                                       <span className="font-bold text-slate-200">{dept.targetPerson}</span>
                                     </div>
                                     <div className="flex-1 border-t sm:border-t-0 sm:border-l border-slate-800/60 pt-1 sm:pt-0 sm:pl-2">
-                                      <span className="text-slate-500 block text-[9.5px]">소관 관리 리더</span>
+                                      <span className="text-slate-500 block text-[9.5px]">
+                                        {lang === "ko" ? "소관 관리 리더" : "Responsible Leader"}
+                                      </span>
                                       <span className="font-bold text-teal-400">{dept.targetLeader}</span>
                                     </div>
                                   </div>
 
                                   <div className="space-y-1.5 bg-[#0E1217]/20 p-2 rounded border border-slate-850/30">
-                                    <span className="text-[9.5px] font-bold text-teal-400 block">• 임원 권장 행동 지침</span>
+                                    <span className="text-[9.5px] font-bold text-teal-400 block">
+                                      {lang === "ko" ? "• 임원 권장 행동 지침" : "• Executive Action Guidelines"}
+                                    </span>
                                     {dept.actionPlans.map((plan, idx) => (
                                       <p key={idx} className="text-[10.5px] text-slate-350 leading-relaxed pl-1.5 border-l border-teal-500/10 mb-0.5 last:mb-0">
                                         {plan}
@@ -2452,15 +2926,17 @@ export default function App() {
                                   <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                                     <h4 className="text-xs font-bold text-white tracking-wide uppercase flex items-center gap-1.5">
                                       <span className={`w-2 h-2 rounded-full ${dept.gaugeColor} animate-pulse`} />
-                                      {dept.deptName} 심층 병목 진단 리포트
+                                      {lang === "ko" ? `${dept.deptName} 심층 병목 진단 리포트` : `${dept.deptName} In-Depth Diagnostic Report`}
                                     </h4>
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${dept.statusColor}`}>
-                                      {dept.status} • {dept.severity} (진택인덱스 {dept.bottleneckScore}%)
+                                      {lang === "ko" ? `${dept.status} • ${dept.severity} (진택인덱스 ${dept.bottleneckScore}%)` : `${dept.status} • ${dept.severity} (Index ${dept.bottleneckScore}%)`}
                                     </span>
                                   </div>
 
                                   <div>
-                                    <span className="text-[9.5px] font-bold text-slate-500 block uppercase tracking-wide">성장 가치 사슬 장애 핵심 요약</span>
+                                    <span className="text-[9.5px] font-bold text-slate-500 block uppercase tracking-wide">
+                                      {lang === "ko" ? "성장 가치 사슬 장애 핵심 요약" : "Core Growth Value Chain Obstacle Summary"}
+                                    </span>
                                     <p className="text-xs font-bold text-[#fbbf24] mt-0.5 leading-snug">
                                       {dept.summary}
                                     </p>
@@ -2469,7 +2945,7 @@ export default function App() {
                                   <div>
                                     <span className="text-[9.5px] font-mono text-slate-400 block uppercase tracking-wide flex items-center gap-1">
                                       <MessageSquare className="h-3 w-3 text-teal-450" />
-                                      1on1 면담 추출 리얼 발췌문
+                                      {lang === "ko" ? "1on1 면담 추출 리얼 발췌문" : "Real Excerpts from 1on1 Sessions"}
                                     </span>
                                     <blockquote className="text-[11px] text-slate-300 italic mt-0.5 bg-[#0E1217]/70 p-3 rounded-lg border border-slate-800/80 leading-relaxed">
                                       "{dept.scriptQuote}"
@@ -2478,7 +2954,9 @@ export default function App() {
 
                                   {/* Major Qualitative Emotions */}
                                   <div className="space-y-1.5 border-t border-slate-800/50 pt-3">
-                                    <span className="text-[9.5px] font-bold text-slate-500 uppercase block tracking-wider">면담 자연어 감정 지표 판정 비율</span>
+                                    <span className="text-[9.5px] font-bold text-slate-500 uppercase block tracking-wider">
+                                      {lang === "ko" ? "면담 자연어 감정 지표 판정 비율" : "Natural Language Emotion Analysis Ratios"}
+                                    </span>
                                     <div className="grid grid-cols-3 gap-2">
                                       {dept.emotions.map((emo, idx) => (
                                         <div key={idx} className="bg-[#0E1217]/50 p-2 rounded border border-slate-850">
@@ -2497,14 +2975,18 @@ export default function App() {
                                   {/* Action Plan Personnel Info */}
                                   <div className="flex flex-col sm:flex-row gap-2 bg-[#0E1217]/50 p-2.5 rounded-lg border border-slate-800 text-[10.5px]">
                                     <div className="flex-1 space-y-0.5">
-                                      <span className="text-[9px] text-slate-500 font-bold block">조치 수혜 대상자</span>
+                                      <span className="text-[9px] text-slate-500 font-bold block">
+                                        {lang === "ko" ? "조치 수혜 대상자" : "Target Employee"}
+                                      </span>
                                       <p className="font-bold text-slate-200 flex items-center gap-1">
                                         <UserCheck className="h-3.5 w-3.5 text-rose-500" />
                                         {dept.targetPerson}
                                       </p>
                                     </div>
                                     <div className="border-t sm:border-t-0 sm:border-l border-slate-800/80 pt-1 sm:pt-0 sm:pl-3 space-y-0.5 flex-1">
-                                      <span className="text-[9px] text-slate-500 font-bold block">면담 관리 배속 리더</span>
+                                      <span className="text-[9px] text-slate-500 font-bold block">
+                                        {lang === "ko" ? "면담 관리 배속 리더" : "Responsible Leader"}
+                                      </span>
                                       <p className="font-bold text-teal-400 flex items-center gap-1">
                                         <Layers className="h-3.5 w-3.5 text-teal-500" />
                                         {dept.targetLeader}
@@ -2517,7 +2999,7 @@ export default function App() {
                                 <div className="p-3.5 bg-teal-500/5 rounded-lg border border-teal-500/15 space-y-2">
                                   <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider flex items-center gap-1">
                                     <CheckCircle className="h-3.5 w-3.5 text-teal-450" />
-                                    조직 리더십 핵심 실행 권장 처방
+                                    {lang === "ko" ? "조직 리더십 핵심 실행 권장 처방" : "Core Executive Leadership Action Plans"}
                                   </span>
                                   <div className="space-y-1.5">
                                     {dept.actionPlans.map((plan, idx) => (
